@@ -136,6 +136,51 @@
     flex-wrap:wrap;
     gap:12px;
   }
+  .direction-block{
+    margin-bottom:26px;
+  }
+  .direction-label{
+    font-family:'Lato', sans-serif;
+    font-weight:700;
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--paper-muted);
+    margin-bottom:10px;
+  }
+  .direction-toggle{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .dir-btn{
+    flex:1;
+    min-width:200px;
+    text-align:left;
+    background:none;
+    border:1.5px solid var(--white);
+    color:var(--white);
+    font-family:'Lato', sans-serif;
+    font-weight:700;
+    font-size:0.85rem;
+    padding:12px 14px;
+    cursor:pointer;
+    transition:background .12s ease, color .12s ease;
+  }
+  .dir-btn .dir-sub{
+    display:block;
+    font-weight:400;
+    font-size:0.75rem;
+    margin-top:2px;
+    opacity:0.8;
+  }
+  .dir-btn.active{
+    background:var(--panel);
+    color:var(--ink);
+  }
+  .dir-btn:hover:not(.active){
+    background:rgba(255,255,255,0.12);
+  }
   .link-btn{
     background:none;border:none;
     font-family:'Lato', sans-serif; font-weight:700;
@@ -356,6 +401,14 @@
 
     <div class="tabs" id="tabs"></div>
 
+    <div class="direction-block">
+      <div class="direction-label">Show me</div>
+      <div class="direction-toggle" id="direction-toggle">
+        <button class="dir-btn active" data-dir="term-first" type="button">Term first <span class="dir-sub">— recall the definition</span></button>
+        <button class="dir-btn" data-dir="def-first" type="button">Definition first <span class="dir-sub">— recall the term</span></button>
+      </div>
+    </div>
+
     <div class="setup-controls">
       <button class="link-btn" id="select-all">Select all</button>
       <button class="start-btn" id="start-btn" disabled>Start review →</button>
@@ -376,13 +429,13 @@
         <div class="face front">
           <div class="punch"></div>
           <span class="cat-chip" id="chip-front"></span>
-          <div class="face-body"><span class="term" id="term-text"></span></div>
+          <div class="face-body"><span class="term" id="front-text"></span></div>
           <div class="flip-hint">tap card to flip</div>
         </div>
         <div class="face back">
           <div class="punch"></div>
           <span class="cat-chip" id="chip-back"></span>
-          <div class="face-body"><span class="def" id="def-text"></span></div>
+          <div class="face-body"><span class="def" id="back-text"></span></div>
           <div class="flip-hint">tap card to flip back</div>
         </div>
       </div>
@@ -419,26 +472,13 @@
    real vocabulary — same {term, definition} shape. */
 const WORD_BANK = {
   roots: {
-    label: "Introduction and Word Parts",
+    label: "Roots",
     color: "var(--teal)",
     terms: [
-      { term: "epiphysis", definition: "ends of a long bone" },
-      { term: "diaphysis", definition: "long middle part of a long bone" },
-      { term: "metaphysis", definition: "connects the diaphysis and the epiphysis" },
-      { term: "axial skeleton", definition: "the skull, spine, sturnum and ribs" },
-      { term: "appendicular skeleton", definition: "upper and lower extremities of the skeleton" },
-      { term: "joints", definition: "where two bones meet" },
-      { term: "cost/o", definition: "related to the rib/s" },
-      { term: "oste/o", definition: "related to the bone/s" },
-      { term: "crani/0", definition: "related to the skull" },
-      { term: "cervic/o", definition: "related to the spine" },
-      { term: "cost/o", definition: "related to the rib/s" },
-      { term: "lumb/o", definition: "related to the back" },
-      { term: "brachi/o", definition: "related to the upper arm" },
-      { term: "carp/o", definition: "related to the wrist" },
-      { term: "femor/o", definition: "related to the femor" },
-      { term: "tibi/o", definition: "related to the tibia" },
-      { term: "tars/o", definition: "related to the ankle" },
+      { term: "cardi/o", definition: "Combining form meaning heart." },
+      { term: "-itis", definition: "Suffix meaning inflammation." },
+      { term: "hepat/o", definition: "Combining form meaning liver." },
+      { term: "-ectomy", definition: "Suffix meaning surgical removal." },
       { term: "arthr/o", definition: "Combining form meaning joint." },
       { term: "dys-", definition: "Prefix meaning painful, difficult, or abnormal." },
       { term: "-emia", definition: "Suffix meaning a condition of the blood." },
@@ -491,6 +531,7 @@ const WORD_BANK = {
 
 /* ===================== STATE ===================== */
 let selectedCats = new Set();
+let studyDirection = 'term-first';
 let deck = [];
 let missedQueue = [];
 let currentIndex = 0;
@@ -549,6 +590,14 @@ document.getElementById('select-all').addEventListener('click', () => {
   updateStartButton();
 });
 
+document.querySelectorAll('.dir-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    studyDirection = btn.dataset.dir;
+    document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
 document.getElementById('start-btn').addEventListener('click', () => {
   if(selectedCats.size === 0){
     document.getElementById('setup-error').textContent = 'Check at least one category to build a set.';
@@ -598,17 +647,36 @@ function currentCard(){
   return deck[currentIndex];
 }
 
-function showCard(){
+function showCard(instant){
   if(currentIndex >= deck.length){
     finishRound();
     return;
   }
   flipped = false;
-  cardEl.classList.remove('flipped');
+
+  if(instant){
+    // Advancing to a new card: snap straight to the front, no flip
+    // animation — otherwise the new card's text gets swapped in
+    // mid-rotation and is readable before the flip finishes.
+    cardEl.style.transition = 'none';
+    cardEl.classList.remove('flipped');
+    void cardEl.offsetWidth; // force reflow before re-enabling transition
+    cardEl.style.transition = '';
+  } else {
+    cardEl.classList.remove('flipped');
+  }
+
   const c = currentCard();
 
-  document.getElementById('term-text').textContent = c.term;
-  document.getElementById('def-text').textContent = c.definition;
+  const frontEl = document.getElementById('front-text');
+  const backEl = document.getElementById('back-text');
+  if(studyDirection === 'term-first'){
+    frontEl.textContent = c.term;      frontEl.className = 'term';
+    backEl.textContent  = c.definition; backEl.className  = 'def';
+  } else {
+    frontEl.textContent = c.definition; frontEl.className = 'def';
+    backEl.textContent  = c.term;       backEl.className  = 'term';
+  }
 
   ['chip-front','chip-back'].forEach(id => {
     const chip = document.getElementById(id);
@@ -646,13 +714,13 @@ function advance(){
     deck = deck.slice(0, currentIndex).concat(shuffle(missedQueue));
     missedQueue = [];
   }
-  showCard();
+  showCard(true);
 }
 
 document.getElementById('btn-shuffle').addEventListener('click', () => {
   const remaining = deck.slice(currentIndex);
   deck = deck.slice(0, currentIndex).concat(shuffle(remaining));
-  showCard();
+  showCard(true);
 });
 
 document.getElementById('btn-restart').addEventListener('click', () => {
