@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Musculoskeletal System Flashcards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#00205B;        /* Rice Blue */
+    --paper:#00205B;      /* page background — Rice Blue */
+    --paper-muted:#ADC7DC;/* Light Blue Gray — secondary text sitting directly on the blue page */
+    --panel:#FFFFFF;      /* white surfaces: tabs, buttons, done screen */
+    --paper-line:#C7CBCF; /* Rice Gray, lightened — used for the progress track */
+    --card:#EEF3F8;       /* Light Blue Gray tint */
+    --card-edge:#C7D6E3;  /* Light Blue Gray */
+    --rule-red:#C04829;   /* Brick Red (accent) */
+    --navy:#00205B;       /* Rice Blue */
+    --sky:#4D9AD4;        /* Medium Blue (secondary) — distinct from the Rice Blue page, used for the Objective tab */
+    --teal:#005B50;       /* Leaf Emerald (accent) */
+    --rose:#C04829;       /* Brick Red (accent) */
+    --gold:#E9A139;       /* Warm Yellow (accent) */
+    --sage:#359245;       /* Grass Green (accent) */
+    --plum:#6B4C6E;
+    --muted:#7C7E7F;      /* Rice Gray */
+    --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html{ font-size:115%; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Lato', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 64px;
+  }
+  .app{
+    width:100%;
+    max-width:720px;
+  }
+  header.masthead{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:3px solid var(--white);
+    padding-bottom:10px;
+    margin-bottom:28px;
+  }
+  header.masthead h1{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:700;
+    font-size:1.5rem;
+    margin:0;
+    letter-spacing:-0.01em;
+    color:var(--white);
+  }
+  header.masthead .tag{
+    font-family:'Lato', sans-serif; font-weight:700;
+    font-size:0.72rem;
+    color:var(--paper-muted);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+  }
+
+  /* ---------- SETUP SCREEN ---------- */
+  .setup-intro{
+    font-size:0.95rem;
+    color:var(--white);
+    margin:0 0 22px;
+    max-width:52ch;
+  }
+  .tabs{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:26px;
+  }
+  .tab{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    background:var(--panel);
+    border:1.5px solid var(--ink);
+    border-left-width:10px;
+    padding:14px 16px 14px 14px;
+    cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease;
+    user-select:none;
+  }
+  .tab:hover{ transform:translateX(2px); }
+  .tab.checked{
+    box-shadow:4px 4px 0 var(--ink);
+    transform:translateX(-2px) translateY(-2px);
+  }
+  .tab[data-cat="roots"]{ border-left-color:var(--teal); }
+  .tab[data-cat="subjective"]{ border-left-color:var(--rose); }
+  .tab[data-cat="objective"]{ border-left-color:var(--sky); }
+  .tab[data-cat="assessment"]{ border-left-color:var(--gold); }
+  .tab[data-cat="plan"]{ border-left-color:var(--sage); }
+
+  .tab .box{
+    width:20px;height:20px;
+    border:2px solid var(--ink);
+    flex:none;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--white);
+  }
+  .tab.checked .box::after{
+    content:"✓";
+    font-size:14px;
+    font-weight:700;
+    line-height:1;
+  }
+  .tab .label-block{ flex:1; }
+  .tab .cat-name{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+    font-size:1.02rem;
+  }
+  .tab .cat-count{
+    font-family:'Lato', sans-serif; font-weight:700;
+    font-size:0.72rem;
+    color:var(--muted);
+    margin-top:2px;
+  }
+
+  .setup-controls{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .link-btn{
+    background:none;border:none;
+    font-family:'Lato', sans-serif; font-weight:700;
+    font-size:0.75rem;
+    color:var(--white);
+    text-decoration:underline;
+    cursor:pointer;
+    padding:4px 0;
+  }
+  .start-btn{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:700;
+    font-size:1rem;
+    background:var(--panel);
+    color:var(--ink);
+    border:none;
+    padding:14px 26px;
+    cursor:pointer;
+    letter-spacing:0.01em;
+    transition:background .12s ease, color .12s ease;
+  }
+  .start-btn:hover:not(:disabled){ background:var(--white); }
+  .start-btn:disabled{ background:#3A5079; color:var(--paper-muted); cursor:not-allowed; }
+  .setup-error{
+    font-family:'Lato', sans-serif; font-weight:700;
+    font-size:0.75rem;
+    color:var(--gold);
+    margin-top:10px;
+    min-height:1em;
+  }
+
+  /* ---------- STUDY SCREEN ---------- */
+  .study-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:16px;
+    font-family:'Lato', sans-serif; font-weight:700;
+    font-size:0.78rem;
+    color:var(--paper-muted);
+  }
+  .progress-track{
+    height:4px;
+    background:var(--paper-line);
+    margin-bottom:26px;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--ink);
+    transition:width .2s ease;
+  }
+
+  .stage{
+    perspective:1400px;
+    margin-bottom:22px;
+  }
+  .card{
+    position:relative;
+    width:100%;
+    aspect-ratio: 8 / 5;
+    max-height:340px;
+    transform-style:preserve-3d;
+    transition:transform .45s cubic-bezier(.4,.2,.2,1);
+    cursor:pointer;
+  }
+  .card.flipped{ transform:rotateY(180deg); }
+  .face{
+    position:absolute; inset:0;
+    backface-visibility:hidden;
+    background:var(--card);
+    border:1.5px solid var(--ink);
+    box-shadow:6px 6px 0 rgba(255,255,255,0.18);
+    padding:28px 30px;
+    display:flex;
+    flex-direction:column;
+  }
+  .face::before{ /* red margin rule */
+    content:"";
+    position:absolute;
+    top:0; bottom:0; left:54px;
+    width:1.5px;
+    background:var(--rule-red);
+    opacity:0.55;
+  }
+  .face::after{ /* horizontal top rule */
+    content:"";
+    position:absolute;
+    top:38px; left:0; right:0;
+    height:1px;
+    background:var(--rule-red);
+    opacity:0.35;
+  }
+  .punch{
+    position:absolute;
+    top:14px; left:20px;
+    width:14px;height:14px;
+    border-radius:50%;
+    background:var(--paper);
+    border:1.5px solid var(--card-edge);
+  }
+  .face .cat-chip{
+    align-self:flex-start;
+    font-family:'Lato', sans-serif; font-weight:700;
+    font-size:0.65rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:3px 8px;
+    border:1px solid currentColor;
+    margin:0 0 auto 66px;
+  }
+  .face-body{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:10px 10px 0;
+  }
+  .face-body .term{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:700;
+    font-size:1.7rem;
+  }
+  .face-body .def{
+    font-family:'Lato', sans-serif;
+    font-size:1.05rem;
+    line-height:1.5;
+    color:var(--ink);
+  }
+  .flip-hint{
+    text-align:center;
+    font-family:'Lato', sans-serif; font-weight:700;
+    font-size:0.68rem;
+    color:var(--muted);
+    letter-spacing:0.05em;
+  }
+  .back{ transform:rotateY(180deg); }
+
+  .rate-row{
+    display:flex;
+    gap:10px;
+    margin-top:16px;
+    min-height:48px;
+  }
+  .rate-btn{
+    flex:1;
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+    font-size:0.92rem;
+    padding:12px;
+    border:1.5px solid var(--ink);
+    background:var(--panel);
+    cursor:pointer;
+    transition:background .12s ease, color .12s ease;
+  }
+  .rate-btn.again{ }
+  .rate-btn.again:hover{ background:var(--rose); border-color:var(--rose); color:var(--white); }
+  .rate-btn.got-it:hover{ background:var(--sage); border-color:var(--sage); color:var(--white); }
+
+  .nav-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:18px;
+  }
+  .ghost-btn{
+    background:none;
+    border:1.5px solid var(--white);
+    color:var(--white);
+    font-family:'Lato', sans-serif; font-weight:700;
+    font-size:0.75rem;
+    padding:8px 14px;
+    cursor:pointer;
+    transition:background .12s ease, color .12s ease;
+  }
+  .ghost-btn:hover{ background:var(--white); color:var(--ink); }
+
+  /* ---------- DONE SCREEN ---------- */
+  .done{
+    text-align:center;
+    padding:50px 20px;
+    border:1.5px solid var(--ink);
+    background:var(--panel);
+  }
+  .done h2{
+    font-family:'Cormorant Garamond', serif;
+    font-size:1.5rem;
+    margin-bottom:10px;
+  }
+  .done p{ color:var(--muted); margin-bottom:26px; }
+
+  .hidden{ display:none !important; }
+
+  @media (max-width:480px){
+    .face{ padding:22px 18px; }
+    .face::before{ left:38px; }
+    .cat-chip{ margin-left:50px !important; }
+    .face-body .term{ font-size:1.4rem; }
+    .face-body .def{ font-size:0.95rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .card, .tab{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="masthead">
+    <h1>Musculoskeletal System Flashcards</h1>
+    <span class="tag">Set Builder</span>
+  </header>
+
+  <!-- SETUP SCREEN -->
+  <section id="setup-screen">
+    <p class="setup-intro">Check the categories you want in today's set. You can mix and match — pick just Roots for a quick drill, or check everything for a full review.</p>
+
+    <div class="tabs" id="tabs"></div>
+
+    <div class="setup-controls">
+      <button class="link-btn" id="select-all">Select all</button>
+      <button class="start-btn" id="start-btn" disabled>Start review →</button>
+    </div>
+    <div class="setup-error" id="setup-error"></div>
+  </section>
+
+  <!-- STUDY SCREEN -->
+  <section id="study-screen" class="hidden">
+    <div class="study-header">
+      <span id="study-count">Card 1 of 12</span>
+      <span id="study-cats"></span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="face front">
+          <div class="punch"></div>
+          <span class="cat-chip" id="chip-front"></span>
+          <div class="face-body"><span class="term" id="term-text"></span></div>
+          <div class="flip-hint">tap card to flip</div>
+        </div>
+        <div class="face back">
+          <div class="punch"></div>
+          <span class="cat-chip" id="chip-back"></span>
+          <div class="face-body"><span class="def" id="def-text"></span></div>
+          <div class="flip-hint">tap card to flip back</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rate-row" id="rate-row">
+      <button class="rate-btn again" id="btn-again">Review again</button>
+      <button class="rate-btn got-it" id="btn-got-it">Got it ✓</button>
+    </div>
+
+    <div class="nav-row">
+      <button class="ghost-btn" id="btn-restart">↺ change categories</button>
+      <button class="ghost-btn" id="btn-shuffle">⤨ reshuffle deck</button>
+    </div>
+  </section>
+
+  <!-- DONE SCREEN -->
+  <section id="done-screen" class="hidden">
+    <div class="done">
+      <h2 id="done-heading">Set complete</h2>
+      <p id="done-sub">Every card in this set was marked "Got it."</p>
+      <button class="start-btn" id="btn-again-round">Run this set again</button>
+      <br><br>
+      <button class="link-btn" id="btn-new-set">Choose different categories</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ===================== WORD BANK =====================
+   Sample medical terminology, organized to mirror SOAP-note
+   structure plus word roots. Swap these arrays out with your
+   real vocabulary — same {term, definition} shape. */
+const WORD_BANK = {
+  roots: {
+    label: "Roots",
+    color: "var(--teal)",
+    terms: [
+      { term: "cardi/o", definition: "Combining form meaning heart." },
+      { term: "-itis", definition: "Suffix meaning inflammation." },
+      { term: "hepat/o", definition: "Combining form meaning liver." },
+      { term: "-ectomy", definition: "Suffix meaning surgical removal." },
+      { term: "arthr/o", definition: "Combining form meaning joint." },
+      { term: "dys-", definition: "Prefix meaning painful, difficult, or abnormal." },
+      { term: "-emia", definition: "Suffix meaning a condition of the blood." },
+      { term: "brady-", definition: "Prefix meaning slow." },
+    ]
+  },
+  subjective: {
+    label: "Subjective",
+    color: "var(--rose)",
+    terms: [
+      { term: "Chief complaint (CC)", definition: "The primary reason the patient states for seeking care, in their own words." },
+      { term: "History of present illness (HPI)", definition: "A chronological narrative of the patient's current symptoms from onset to now." },
+      { term: "Onset", definition: "When a symptom or condition first began." },
+      { term: "Exacerbation", definition: "A worsening of symptoms or a disease reported by the patient." },
+      { term: "Malaise", definition: "A general feeling of discomfort or unease reported by the patient." },
+    ]
+  },
+  objective: {
+    label: "Objective",
+    color: "var(--sky)",
+    terms: [
+      { term: "Vital signs", definition: "Measured data including temperature, pulse, respiration, and blood pressure." },
+      { term: "Auscultation", definition: "Examination technique of listening to internal sounds, usually with a stethoscope." },
+      { term: "Palpation", definition: "Examination technique of feeling with the hands to assess body structures." },
+      { term: "Afebrile", definition: "Without fever, based on a measured temperature." },
+      { term: "Erythema", definition: "Observable redness of the skin." },
+    ]
+  },
+  assessment: {
+    label: "Assessment",
+    color: "var(--gold)",
+    terms: [
+      { term: "Differential diagnosis", definition: "A ranked list of possible conditions that could explain the patient's findings." },
+      { term: "Rule out (R/O)", definition: "A condition being considered and tested for, to confirm or exclude it." },
+      { term: "Prognosis", definition: "The clinician's prediction of the likely course or outcome of a condition." },
+      { term: "Comorbidity", definition: "A condition existing alongside and independent of the primary diagnosis." },
+    ]
+  },
+  plan: {
+    label: "Plan",
+    color: "var(--sage)",
+    terms: [
+      { term: "Referral", definition: "Directing a patient to another provider or specialist for further care." },
+      { term: "Follow-up (F/U)", definition: "A scheduled future visit to reassess the patient's condition." },
+      { term: "Prophylaxis", definition: "Treatment given to prevent disease before it occurs." },
+      { term: "Titrate", definition: "To gradually adjust a medication dose based on patient response." },
+    ]
+  }
+};
+
+/* ===================== STATE ===================== */
+let selectedCats = new Set();
+let deck = [];
+let missedQueue = [];
+let currentIndex = 0;
+let flipped = false;
+let sessionTotal = 0;
+
+/* ===================== SETUP SCREEN ===================== */
+const tabsEl = document.getElementById('tabs');
+
+Object.entries(WORD_BANK).forEach(([key, cat]) => {
+  const tab = document.createElement('div');
+  tab.className = 'tab';
+  tab.dataset.cat = key;
+  tab.innerHTML = `
+    <div class="box"></div>
+    <div class="label-block">
+      <div class="cat-name">${cat.label}</div>
+      <div class="cat-count">${cat.terms.length} terms</div>
+    </div>
+  `;
+  tab.addEventListener('click', () => toggleCategory(key, tab));
+  tabsEl.appendChild(tab);
+});
+
+function toggleCategory(key, tabEl){
+  if(selectedCats.has(key)){
+    selectedCats.delete(key);
+    tabEl.classList.remove('checked');
+  } else {
+    selectedCats.add(key);
+    tabEl.classList.add('checked');
+  }
+  updateStartButton();
+}
+
+function updateStartButton(){
+  const btn = document.getElementById('start-btn');
+  btn.disabled = selectedCats.size === 0;
+  document.getElementById('setup-error').textContent =
+    selectedCats.size === 0 ? '' : '';
+}
+
+document.getElementById('select-all').addEventListener('click', () => {
+  const allSelected = selectedCats.size === Object.keys(WORD_BANK).length;
+  document.querySelectorAll('.tab').forEach(tab => {
+    const key = tab.dataset.cat;
+    if(allSelected){
+      selectedCats.delete(key);
+      tab.classList.remove('checked');
+    } else {
+      selectedCats.add(key);
+      tab.classList.add('checked');
+    }
+  });
+  document.getElementById('select-all').textContent = allSelected ? 'Select all' : 'Clear all';
+  updateStartButton();
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  if(selectedCats.size === 0){
+    document.getElementById('setup-error').textContent = 'Check at least one category to build a set.';
+    return;
+  }
+  buildDeck();
+  startStudySession();
+});
+
+/* ===================== DECK BUILDING ===================== */
+function shuffle(arr){
+  const a = [...arr];
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildDeck(){
+  let pool = [];
+  selectedCats.forEach(key => {
+    WORD_BANK[key].terms.forEach(t => {
+      pool.push({ ...t, catKey: key, catLabel: WORD_BANK[key].label, catColor: WORD_BANK[key].color });
+    });
+  });
+  deck = shuffle(pool);
+  missedQueue = [];
+  currentIndex = 0;
+  sessionTotal = deck.length;
+}
+
+/* ===================== STUDY SCREEN ===================== */
+const setupScreen = document.getElementById('setup-screen');
+const studyScreen = document.getElementById('study-screen');
+const doneScreen = document.getElementById('done-screen');
+const cardEl = document.getElementById('card');
+
+function startStudySession(){
+  setupScreen.classList.add('hidden');
+  doneScreen.classList.add('hidden');
+  studyScreen.classList.remove('hidden');
+  showCard();
+}
+
+function currentCard(){
+  return deck[currentIndex];
+}
+
+function showCard(){
+  if(currentIndex >= deck.length){
+    finishRound();
+    return;
+  }
+  flipped = false;
+  cardEl.classList.remove('flipped');
+  const c = currentCard();
+
+  document.getElementById('term-text').textContent = c.term;
+  document.getElementById('def-text').textContent = c.definition;
+
+  ['chip-front','chip-back'].forEach(id => {
+    const chip = document.getElementById(id);
+    chip.textContent = c.catLabel;
+    chip.style.color = c.catColor;
+  });
+
+  const doneCount = sessionTotal - deck.length + currentIndex;
+  document.getElementById('study-count').textContent = `Card ${currentIndex + 1} of ${deck.length}`;
+  document.getElementById('study-cats').textContent =
+    [...selectedCats].map(k => WORD_BANK[k].label).join(' · ');
+
+  const pct = ((currentIndex) / deck.length) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+cardEl.addEventListener('click', () => {
+  flipped = !flipped;
+  cardEl.classList.toggle('flipped', flipped);
+});
+
+document.getElementById('btn-got-it').addEventListener('click', (e) => {
+  e.stopPropagation();
+  advance();
+});
+document.getElementById('btn-again').addEventListener('click', (e) => {
+  e.stopPropagation();
+  missedQueue.push(currentCard());
+  advance();
+});
+
+function advance(){
+  currentIndex++;
+  if(currentIndex >= deck.length && missedQueue.length > 0){
+    deck = deck.slice(0, currentIndex).concat(shuffle(missedQueue));
+    missedQueue = [];
+  }
+  showCard();
+}
+
+document.getElementById('btn-shuffle').addEventListener('click', () => {
+  const remaining = deck.slice(currentIndex);
+  deck = deck.slice(0, currentIndex).concat(shuffle(remaining));
+  showCard();
+});
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+  studyScreen.classList.add('hidden');
+  setupScreen.classList.remove('hidden');
+});
+
+/* ===================== DONE SCREEN ===================== */
+function finishRound(){
+  studyScreen.classList.add('hidden');
+  doneScreen.classList.remove('hidden');
+  document.getElementById('done-heading').textContent = 'Set complete';
+  document.getElementById('done-sub').textContent =
+    `You reviewed ${sessionTotal} term${sessionTotal === 1 ? '' : 's'} across ${selectedCats.size} categor${selectedCats.size === 1 ? 'y' : 'ies'}.`;
+}
+
+document.getElementById('btn-again-round').addEventListener('click', () => {
+  buildDeck();
+  startStudySession();
+});
+document.getElementById('btn-new-set').addEventListener('click', () => {
+  doneScreen.classList.add('hidden');
+  setupScreen.classList.remove('hidden');
+});
+</script>
+</body>
+</html>
