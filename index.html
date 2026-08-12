@@ -5,596 +5,1070 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Musculoskeletal System Flashcards</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Karla:wght@500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
-    --ink:#00205B;        /* Rice Blue */
-    --paper:#00205B;      /* page background — Rice Blue */
-    --paper-muted:#ADC7DC;/* Light Blue Gray — secondary text sitting directly on the blue page */
-    --panel:#FFFFFF;      /* white surfaces: tabs, buttons, done screen */
-    --paper-line:#C7CBCF; /* Rice Gray, lightened — used for the progress track */
-    --card:#EEF3F8;       /* Light Blue Gray tint */
-    --card-edge:#C7D6E3;  /* Light Blue Gray */
-    --rule-red:#C04829;   /* Brick Red (accent) */
-    --navy:#00205B;       /* Rice Blue */
-    --sky:#4D9AD4;        /* Medium Blue (secondary) — distinct from the Rice Blue page, used for the Objective tab */
-    --teal:#005B50;       /* Leaf Emerald (accent) */
-    --rose:#C04829;       /* Brick Red (accent) */
-    --gold:#E9A139;       /* Warm Yellow (accent) */
-    --sage:#359245;       /* Grass Green (accent) */
-    --plum:#6B4C6E;
-    --muted:#7C7E7F;      /* Rice Gray */
-    --white:#FFFFFF;
+    /* ============ WAYFINDER TOKENS (from style guide, unchanged) ============ */
+    --shell-bg:#f6f5f2;
+    --shell-ink:#1c1c1c;
+    --shell-muted:#6a6a6a;
+
+    --bg:#ffffff;
+    --surface:#ffffff;
+    --surface-2:#fff8ef;
+    --ink:#13133e;
+    --muted:#5b5d6b;
+    --primary:#00cca0;
+    --primary-hover:#0c9372;
+    --secondary:#026aa1;
+    --accent:#ff8753;
+    --accent-warm:#b72567;
+    --rice-blue:#00205b;
+    --tag-bg:#026aa1;
+    --warn-text:#b72567;
+    --border:#e0e2e6;
+    --radius-sm:14px;
+    --radius-md:18px;
+    --radius-lg:24px;
+    --font-display:'Karla', sans-serif;
+    --display-weight:800;
+    --font-body:'Lato', sans-serif;
+    --shadow:0 8px 20px rgba(19,19,62,0.08);
+    --border-w:2px;
+    --card-border-w:4px;
+
+    --primary-fill:#007a60;       /* 5.31:1 on white */
+    --accent-fill:#b8501e;        /* 4.99:1 on white */
+    --primary-fill-large:#009f7c; /* 3.36:1, large text/decorative only */
+    --accent-fill-large:#d87246;  /* 3.27:1, large text/decorative only */
+
+    --gradient-main:linear-gradient(135deg, #0a509e 0%, #00c1de 52%, #00cca0 100%); /* decorative only */
+    --gradient-cta:linear-gradient(135deg, #0a509e 0%, #02718a 52%, #03725c 100%);   /* text-safe, buttons */
+    --gradient-foundational:linear-gradient(135deg, #ff8753 0%, #b72567 50%, #00cca0 100%);
+
+    /* ============ CATEGORY CHIPS ============
+       Pastel-bg / dark-text pairs, in the same family as the guide's own
+       "Category tags" swatches (Chemistry/Math/Biology/Art History/History
+       reused directly; Roots gets an analogous navy pairing since Rice Blue
+       has no chip example in the guide). Every pair checked >=4.5:1. */
+    --cat-roots-bg:#eaf0fa;      --cat-roots-text:#00205b;
+    --cat-subjective-bg:#fff2ea; --cat-subjective-text:#b8501e;
+    --cat-objective-bg:#eaf7fd;  --cat-objective-text:#026aa1;
+    --cat-assessment-bg:#eafbf3; --cat-assessment-text:#007a60;
+    --cat-plan-bg:#fffbe8;       --cat-plan-text:#8a6d0c;
+    --cat-general-bg:#fdeef5;    --cat-general-text:#b72567;
+
+    /* status is a separate axis from category, so it gets its own semantics:
+       new = not started (neutral), learning = in progress (warm), known = mastered (green) */
+    --status-new:#5b5d6b;
+    --status-learning:#b8501e;
+    --status-known:#007a60;
   }
+
   *{box-sizing:border-box;}
-  html{ font-size:115%; }
+  html,body{margin:0;padding:0;}
   body{
-    margin:0;
-    background:var(--paper);
+    background:var(--shell-bg);
     color:var(--ink);
-    font-family:'Lato', sans-serif;
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
     min-height:100vh;
     display:flex;
     justify-content:center;
-    padding:32px 16px 64px;
+    padding:40px 16px 64px;
   }
-  .app{
-    width:100%;
-    max-width:720px;
+  .sr-only{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
   }
-  header.masthead{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    border-bottom:3px solid var(--white);
-    padding-bottom:10px;
-    margin-bottom:28px;
+
+  /* Focus indicator (SC 2.4.7/2.4.11): double ring, straight from the style guide,
+     so it stays visible against any surface — including the gradient hero. */
+  a:focus-visible, button:focus-visible, [tabindex]:focus-visible,
+  input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline:3px solid #ffffff;
+    outline-offset:2px;
+    box-shadow:0 0 0 5px #13133e;
+    border-radius:4px;
   }
-  header.masthead h1{
-    font-family:'Cormorant Garamond', serif;
-    font-weight:700;
-    font-size:1.5rem;
-    margin:0;
+
+  .app{ width:100%; max-width:720px; }
+
+  /* ---------- CANVAS SHELL ---------- */
+  .canvas{
+    background:var(--bg);
+    border:1px solid #e4e2da;
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+
+  /* ---------- HERO / MASTHEAD ---------- */
+  .hero-wf{
+    position:relative; overflow:hidden;
+    padding:32px 32px 26px;
+    background:var(--gradient-foundational);
+    color:#fff;
+  }
+  .hero-wf::before{
+    content:"";
+    position:absolute; inset:0;
+    background:linear-gradient(100deg, rgba(4,15,35,0.62) 0%, rgba(4,15,35,0.48) 45%, rgba(4,15,35,0.30) 100%);
+    pointer-events:none;
+  }
+  .hero-blob{ position:absolute; border-radius:50%; filter:blur(2px); opacity:0.5; pointer-events:none; }
+  .hero-blob.b1{ width:190px;height:190px; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.55), rgba(255,255,255,0) 70%); top:-70px; right:20px; }
+  .hero-blob.b2{ width:150px;height:150px; background:radial-gradient(circle at 30% 30%, rgba(0,204,160,0.55), rgba(0,204,160,0) 70%); bottom:-60px; left:40%; }
+
+  .hero-content{ position:relative; }
+  .hero-eyebrow{
+    display:inline-block;
+    background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.4);
+    padding:5px 13px; border-radius:999px;
+    font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+    margin-bottom:14px;
+  }
+  .hero-content h1{
+    font-family:var(--font-display); font-weight:var(--display-weight);
     letter-spacing:-0.01em;
-    color:var(--white);
+    font-size:26px; line-height:1.15; margin:0 0 6px;
   }
-  header.masthead .tag{
-    font-family:'Lato', sans-serif; font-weight:700;
-    font-size:0.72rem;
-    color:var(--paper-muted);
-    text-transform:uppercase;
-    letter-spacing:0.08em;
+  .hero-sub{
+    font-size:14px; line-height:1.55; color:rgba(255,255,255,0.92);
+    margin:0; max-width:52ch;
   }
+
+  .topbar{
+    position:relative;
+    display:flex; justify-content:space-between; align-items:center;
+    gap:10px; flex-wrap:wrap;
+    margin-top:18px;
+  }
+  .topbar-name{ font-size:12.5px; font-weight:700; color:rgba(255,255,255,0.92); }
+  .topbar-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+
+  /* ---------- BUTTONS (Wayfinder: pill, Lato 700) ---------- */
+  .btn{
+    font-family:'Lato', sans-serif; font-weight:700; font-size:14px;
+    padding:12px 22px; border-radius:999px;
+    border:var(--border-w) solid transparent;
+    cursor:pointer; display:inline-flex; align-items:center; gap:8px;
+    line-height:1.2;
+  }
+  .btn-primary{ background:var(--gradient-cta); color:#fff; border:none; }
+  .btn-primary:hover{ filter:brightness(1.06); }
+  .btn-primary:disabled{ background:#8b8ba0; color:rgba(255,255,255,0.85); cursor:not-allowed; filter:none; }
+  .btn-secondary{ background:transparent; border-color:var(--secondary); color:var(--secondary); }
+  .btn-secondary:hover{ background:rgba(2,106,161,0.08); }
+  .btn-outline-danger{ background:transparent; border-color:var(--accent-fill); color:var(--accent-fill); }
+  .btn-outline-danger:hover{ background:rgba(184,80,30,0.08); }
+  .btn-ghost{
+    background:transparent; border:none; color:rgba(255,255,255,0.95);
+    font-weight:700; font-size:13px; padding:8px 14px; border-radius:999px;
+    border:1.5px solid rgba(255,255,255,0.55);
+  }
+  .btn-ghost:hover{ background:rgba(255,255,255,0.15); }
+  .btn-ghost-ink{
+    background:transparent; border:1.5px solid var(--border); color:var(--muted);
+    font-weight:700; font-size:13px; padding:8px 14px; border-radius:999px;
+  }
+  .btn-ghost-ink:hover{ background:var(--surface-2); color:var(--ink); }
+  .btn-sm{ padding:8px 16px; font-size:13px; }
+  .link-btn{
+    background:none; border:none; font-family:'Lato', sans-serif; font-weight:700;
+    font-size:13.5px; color:var(--secondary); text-decoration:underline; cursor:pointer; padding:4px 0;
+  }
+  .hidden{ display:none !important; }
+
+  /* ---------- SECTION SCAFFOLDING ---------- */
+  .section{ padding:28px 32px; border-bottom:1px solid var(--border); }
+  .section:last-child{ border-bottom:none; }
+  .section-intro{ font-size:14.5px; line-height:1.6; color:var(--muted); margin:0 0 20px; max-width:56ch; }
+  .field-error{
+    font-family:'Lato', sans-serif; font-weight:700; font-size:13px;
+    color:var(--accent-fill); margin-top:10px; min-height:1.3em;
+  }
+
+  /* ---------- SHARED INPUTS ---------- */
+  .field-label{
+    display:block; font-family:'Lato', sans-serif; font-weight:700; font-size:12px;
+    text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); margin-bottom:6px;
+  }
+  .text-input{
+    font-family:'Lato', sans-serif; font-size:14.5px;
+    padding:11px 14px; border-radius:10px;
+    border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+    width:100%;
+  }
+  .text-input::placeholder{ color:#93949f; }
+  textarea.text-input{ resize:vertical; font-family:'Lato', sans-serif; }
+  select.text-input{ cursor:pointer; }
+
+  /* ---------- STUDENT SCREEN ---------- */
+  .student-list{ display:flex; flex-direction:column; gap:8px; margin:2px 0 22px; }
+  .student-row{ display:flex; gap:8px; align-items:stretch; }
+  .student-btn{
+    flex:1; text-align:left;
+    background:var(--surface); border:1.5px solid var(--border); border-radius:12px;
+    color:var(--ink);
+    font-family:var(--font-display); font-weight:var(--display-weight); letter-spacing:-0.01em; font-size:16px;
+    padding:12px 16px; cursor:pointer;
+    transition:border-color .12s ease, box-shadow .12s ease;
+  }
+  .student-btn:hover{ border-color:var(--secondary); box-shadow:var(--shadow); }
+  .student-del{
+    width:42px; border-radius:12px;
+    background:none; border:1.5px solid var(--border); color:var(--accent-fill);
+    font-size:1.2rem; cursor:pointer; line-height:1;
+    transition:background .12s ease, border-color .12s ease;
+  }
+  .student-del:hover{ background:var(--cat-subjective-bg); border-color:var(--accent-fill); }
+  .student-new{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin:6px 0 18px; }
+  .student-new .field-wrap{ flex:1; min-width:200px; }
+  .student-divider{
+    font-family:'Lato', sans-serif; font-weight:700; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin:22px 0 10px;
+  }
+
+  /* ---------- CARDS SCREEN ---------- */
+  .card-form{
+    display:flex; flex-direction:column; gap:12px;
+    background:var(--surface-2); border:1.5px solid var(--border); border-radius:var(--radius-sm);
+    padding:18px; margin-bottom:22px;
+  }
+  .card-form-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .card-form-row .field-wrap{ flex:1; min-width:160px; }
+  .card-form-actions{ display:flex; gap:14px; align-items:center; margin-top:2px; }
+
+  .bulk-import{
+    background:var(--surface-2); border:1.5px solid var(--border); border-radius:var(--radius-sm);
+    padding:18px; margin-bottom:26px;
+  }
+  .bulk-import h2{ font-family:var(--font-display); font-weight:800; font-size:15px; margin:0 0 4px; color:var(--ink); }
+  .bulk-hint{ font-family:'Lato', sans-serif; font-size:13px; color:var(--muted); margin:0 0 14px; line-height:1.55; }
+  .bulk-hint strong{ color:var(--ink); }
+
+  .card-group{
+    margin-bottom:18px; padding:16px 18px;
+    background:var(--surface); border:var(--card-border-w) solid var(--accent-color, var(--border));
+    border-radius:var(--radius-sm);
+  }
+  .card-group.is-empty{ border-style:dashed; border-width:2px; }
+  .card-group-header{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .card-group-count{ font-family:'Lato', sans-serif; font-weight:700; font-size:12px; color:var(--muted); }
+  .card-group-empty{ font-family:'Lato', sans-serif; font-size:13px; color:var(--muted); font-style:italic; padding:2px 0; }
+
+  .cat-chip{
+    display:inline-block; padding:6px 14px; border-radius:999px;
+    font-family:'Lato', sans-serif; font-weight:800; font-size:12px;
+    background:var(--chip-bg, var(--surface-2)); color:var(--chip-text, var(--ink));
+  }
+
+  .card-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    background:var(--surface); border:1.5px solid var(--border); border-radius:10px;
+    padding:10px 14px; margin-bottom:8px;
+  }
+  .card-row-main{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .card-row-term{
+    font-family:'Lato', sans-serif; font-weight:700; font-size:14.5px; color:var(--ink);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .status-badge{
+    font-family:'Lato', sans-serif; font-weight:800; font-size:11px;
+    text-transform:uppercase; letter-spacing:0.04em;
+    padding:3px 9px; border-radius:999px; flex:none;
+    background:var(--surface-2); color:var(--status-color, var(--muted));
+    border:1px solid currentColor;
+  }
+  .card-row-actions{ display:flex; gap:6px; flex:none; }
 
   /* ---------- SETUP SCREEN ---------- */
-  .setup-intro{
-    font-size:0.95rem;
-    color:var(--white);
-    margin:0 0 22px;
-    max-width:52ch;
-  }
-  .tabs{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    margin-bottom:26px;
-  }
+  .tabs{ display:flex; flex-direction:column; gap:10px; margin-bottom:24px; }
   .tab{
-    position:relative;
-    display:flex;
-    align-items:center;
-    gap:14px;
-    background:var(--panel);
-    border:1.5px solid var(--ink);
-    border-left-width:10px;
+    all:unset;
+    position:relative; box-sizing:border-box;
+    display:flex; align-items:center; gap:14px;
+    background:var(--surface);
+    border:1.5px solid var(--border);
+    border-left-width:8px; border-left-color:var(--accent-color, var(--border));
+    border-radius:var(--radius-sm);
     padding:14px 16px 14px 14px;
     cursor:pointer;
-    transition:transform .12s ease, box-shadow .12s ease;
-    user-select:none;
+    transition:box-shadow .12s ease, border-color .12s ease;
   }
-  .tab:hover{ transform:translateX(2px); }
-  .tab.checked{
-    box-shadow:4px 4px 0 var(--ink);
-    transform:translateX(-2px) translateY(-2px);
-  }
-  .tab[data-cat="roots"]{ border-left-color:var(--teal); }
-  .tab[data-cat="subjective"]{ border-left-color:var(--rose); }
-  .tab[data-cat="objective"]{ border-left-color:var(--sky); }
-  .tab[data-cat="assessment"]{ border-left-color:var(--gold); }
-  .tab[data-cat="plan"]{ border-left-color:var(--sage); }
-
+  .tab:hover:not([aria-disabled="true"]){ border-color:var(--accent-color, var(--secondary)); }
+  .tab[aria-checked="true"]{ box-shadow:var(--shadow); border-color:var(--accent-color); }
+  .tab[aria-disabled="true"]{ opacity:0.5; cursor:not-allowed; }
   .tab .box{
-    width:20px;height:20px;
-    border:2px solid var(--ink);
-    flex:none;
-    display:flex;align-items:center;justify-content:center;
-    background:var(--white);
+    width:20px; height:20px; border:2px solid var(--ink); border-radius:6px; flex:none;
+    display:flex; align-items:center; justify-content:center; background:var(--surface); color:var(--ink);
   }
-  .tab.checked .box::after{
-    content:"✓";
-    font-size:14px;
-    font-weight:700;
-    line-height:1;
-  }
+  .tab[aria-checked="true"] .box{ background:var(--ink); color:#fff; }
   .tab .label-block{ flex:1; }
-  .tab .cat-name{
-    font-family:'Cormorant Garamond', serif;
-    font-weight:600;
-    font-size:1.02rem;
-  }
-  .tab .cat-count{
-    font-family:'Lato', sans-serif; font-weight:700;
-    font-size:0.72rem;
-    color:var(--muted);
-    margin-top:2px;
-  }
+  .tab .cat-name{ font-family:var(--font-display); font-weight:800; letter-spacing:-0.01em; font-size:15.5px; color:var(--ink); }
+  .tab .cat-count{ font-family:'Lato', sans-serif; font-weight:700; font-size:12px; color:var(--muted); margin-top:2px; }
 
-  .setup-controls{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    flex-wrap:wrap;
-    gap:12px;
+  .setup-controls{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  .choice-block{ margin-bottom:24px; }
+  .choice-label{
+    font-family:'Lato', sans-serif; font-weight:700; font-size:12px;
+    text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); margin-bottom:10px;
   }
-  .direction-block{
-    margin-bottom:26px;
-  }
-  .direction-label{
-    font-family:'Lato', sans-serif;
-    font-weight:700;
-    font-size:0.72rem;
-    text-transform:uppercase;
-    letter-spacing:0.08em;
-    color:var(--paper-muted);
-    margin-bottom:10px;
-  }
-  .direction-toggle{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-  }
+  .choice-toggle{ display:flex; gap:10px; flex-wrap:wrap; }
   .dir-btn{
-    flex:1;
-    min-width:200px;
-    text-align:left;
-    background:none;
-    border:1.5px solid var(--white);
-    color:var(--white);
-    font-family:'Lato', sans-serif;
-    font-weight:700;
-    font-size:0.85rem;
-    padding:12px 14px;
-    cursor:pointer;
-    transition:background .12s ease, color .12s ease;
+    flex:1; min-width:200px; text-align:left;
+    background:var(--surface); border:1.5px solid var(--border); border-radius:12px; color:var(--ink);
+    font-family:'Lato', sans-serif; font-weight:700; font-size:14px;
+    padding:12px 14px; cursor:pointer;
+    transition:background .12s ease, border-color .12s ease;
   }
-  .dir-btn .dir-sub{
-    display:block;
-    font-weight:400;
-    font-size:0.75rem;
-    margin-top:2px;
-    opacity:0.8;
-  }
-  .dir-btn.active{
-    background:var(--panel);
-    color:var(--ink);
-  }
-  .dir-btn:hover:not(.active){
-    background:rgba(255,255,255,0.12);
-  }
-  .link-btn{
-    background:none;border:none;
-    font-family:'Lato', sans-serif; font-weight:700;
-    font-size:0.75rem;
-    color:var(--white);
-    text-decoration:underline;
-    cursor:pointer;
-    padding:4px 0;
-  }
-  .start-btn{
-    font-family:'Cormorant Garamond', serif;
-    font-weight:700;
-    font-size:1rem;
-    background:var(--panel);
-    color:var(--ink);
-    border:none;
-    padding:14px 26px;
-    cursor:pointer;
-    letter-spacing:0.01em;
-    transition:background .12s ease, color .12s ease;
-  }
-  .start-btn:hover:not(:disabled){ background:var(--white); }
-  .start-btn:disabled{ background:#3A5079; color:var(--paper-muted); cursor:not-allowed; }
-  .setup-error{
-    font-family:'Lato', sans-serif; font-weight:700;
-    font-size:0.75rem;
-    color:var(--gold);
-    margin-top:10px;
-    min-height:1em;
-  }
+  .dir-btn .dir-sub{ display:block; font-weight:400; font-size:12.5px; margin-top:2px; color:var(--muted); }
+  .dir-btn[aria-pressed="true"]{ background:var(--surface-2); border-color:var(--secondary); box-shadow:var(--shadow); }
+  .dir-btn[aria-pressed="true"] .dir-sub{ color:var(--muted); }
+  .dir-btn:hover{ border-color:var(--secondary); }
 
   /* ---------- STUDY SCREEN ---------- */
   .study-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:16px;
-    font-family:'Lato', sans-serif; font-weight:700;
-    font-size:0.78rem;
-    color:var(--paper-muted);
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;
+    font-family:'Lato', sans-serif; font-weight:700; font-size:13px; color:var(--muted);
   }
-  .progress-track{
-    height:4px;
-    background:var(--paper-line);
-    margin-bottom:26px;
-  }
-  .progress-fill{
-    height:100%;
-    background:var(--ink);
-    transition:width .2s ease;
-  }
+  .bar-track{ background:var(--surface-2); border-radius:999px; height:8px; overflow:hidden; margin-bottom:24px; }
+  .bar-fill{ height:100%; background:var(--gradient-main); border-radius:999px; transition:width .2s ease; }
 
-  .stage{
-    perspective:1400px;
-    margin-bottom:22px;
+  .stage{ perspective:1400px; margin-bottom:20px; }
+  .card-flip{
+    all:unset; box-sizing:border-box;
+    position:relative; display:block; width:100%; aspect-ratio:8/5; max-height:320px;
+    transform-style:preserve-3d; transition:transform .45s cubic-bezier(.4,.2,.2,1); cursor:pointer;
   }
-  .card{
-    position:relative;
-    width:100%;
-    aspect-ratio: 8 / 5;
-    max-height:340px;
-    transform-style:preserve-3d;
-    transition:transform .45s cubic-bezier(.4,.2,.2,1);
-    cursor:pointer;
-  }
-  .card.flipped{ transform:rotateY(180deg); }
+  .card-flip.flipped{ transform:rotateY(180deg); }
   .face{
-    position:absolute; inset:0;
-    backface-visibility:hidden;
-    background:var(--card);
-    border:1.5px solid var(--ink);
-    box-shadow:6px 6px 0 rgba(255,255,255,0.18);
-    padding:28px 30px;
-    display:flex;
-    flex-direction:column;
+    position:absolute; inset:0; backface-visibility:hidden;
+    background:var(--surface); border:var(--card-border-w) solid var(--accent-color, var(--border));
+    border-radius:var(--radius-md); box-shadow:var(--shadow);
+    padding:24px 26px; display:flex; flex-direction:column;
   }
-  .face::before{ /* red margin rule */
-    content:"";
-    position:absolute;
-    top:0; bottom:0; left:54px;
-    width:1.5px;
-    background:var(--rule-red);
-    opacity:0.55;
-  }
-  .face::after{ /* horizontal top rule */
-    content:"";
-    position:absolute;
-    top:38px; left:0; right:0;
-    height:1px;
-    background:var(--rule-red);
-    opacity:0.35;
-  }
-  .punch{
-    position:absolute;
-    top:14px; left:20px;
-    width:14px;height:14px;
-    border-radius:50%;
-    background:var(--paper);
-    border:1.5px solid var(--card-edge);
-  }
-  .face .cat-chip{
-    align-self:flex-start;
-    font-family:'Lato', sans-serif; font-weight:700;
-    font-size:0.65rem;
-    letter-spacing:0.08em;
-    text-transform:uppercase;
-    padding:3px 8px;
-    border:1px solid currentColor;
-    margin:0 0 auto 66px;
-  }
-  .face-body{
-    flex:1;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-    padding:10px 10px 0;
-  }
-  .face-body .term{
-    font-family:'Cormorant Garamond', serif;
-    font-weight:700;
-    font-size:1.7rem;
-  }
-  .face-body .def{
-    font-family:'Lato', sans-serif;
-    font-size:1.05rem;
-    line-height:1.5;
-    color:var(--ink);
-  }
-  .flip-hint{
-    text-align:center;
-    font-family:'Lato', sans-serif; font-weight:700;
-    font-size:0.68rem;
-    color:var(--muted);
-    letter-spacing:0.05em;
-  }
+  .face .cat-chip{ align-self:flex-start; margin-bottom:auto; }
+  .face-body{ flex:1; display:flex; align-items:center; justify-content:center; text-align:center; padding:8px 6px 0; }
+  .face-body .term{ font-family:var(--font-display); font-weight:800; letter-spacing:-0.01em; font-size:26px; color:var(--ink); }
+  .face-body .def{ font-family:'Lato', sans-serif; font-size:16px; line-height:1.5; color:var(--ink); }
+  .flip-hint{ text-align:center; font-family:'Lato', sans-serif; font-weight:700; font-size:11.5px; color:var(--muted); letter-spacing:0.04em; }
   .back{ transform:rotateY(180deg); }
 
-  .rate-row{
-    display:flex;
-    gap:10px;
-    margin-top:16px;
-    min-height:48px;
-  }
+  .rate-row{ display:flex; gap:10px; margin-top:16px; min-height:48px; }
   .rate-btn{
-    flex:1;
-    font-family:'Cormorant Garamond', serif;
-    font-weight:600;
-    font-size:0.92rem;
-    padding:12px;
-    border:1.5px solid var(--ink);
-    background:var(--panel);
-    cursor:pointer;
-    transition:background .12s ease, color .12s ease;
+    flex:1; font-family:var(--font-display); font-weight:800; letter-spacing:-0.01em; font-size:15px;
+    padding:12px; border-radius:999px; border:1.5px solid var(--border); background:var(--surface); color:var(--ink);
+    cursor:pointer; transition:background .12s ease, color .12s ease, border-color .12s ease;
   }
-  .rate-btn.again{ }
-  .rate-btn.again:hover{ background:var(--rose); border-color:var(--rose); color:var(--white); }
-  .rate-btn.got-it:hover{ background:var(--sage); border-color:var(--sage); color:var(--white); }
+  .rate-btn.again{ border-color:var(--accent-fill); color:var(--accent-fill); }
+  .rate-btn.again:hover{ background:var(--accent-fill); color:#fff; }
+  .rate-btn.got-it{ border-color:var(--primary-fill); color:var(--primary-fill); }
+  .rate-btn.got-it:hover{ background:var(--primary-fill); color:#fff; }
 
-  .nav-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-top:18px;
-  }
-  .ghost-btn{
-    background:none;
-    border:1.5px solid var(--white);
-    color:var(--white);
-    font-family:'Lato', sans-serif; font-weight:700;
-    font-size:0.75rem;
-    padding:8px 14px;
-    cursor:pointer;
-    transition:background .12s ease, color .12s ease;
-  }
-  .ghost-btn:hover{ background:var(--white); color:var(--ink); }
+  .nav-row{ display:flex; justify-content:space-between; align-items:center; margin-top:18px; flex-wrap:wrap; gap:10px; }
 
   /* ---------- DONE SCREEN ---------- */
-  .done{
-    text-align:center;
-    padding:50px 20px;
-    border:1.5px solid var(--ink);
-    background:var(--panel);
+  .done{ text-align:center; padding:46px 24px; }
+  .done h2{ font-family:var(--font-display); font-weight:800; letter-spacing:-0.01em; font-size:24px; margin:0 0 10px; color:var(--ink); }
+  .done p{ color:var(--muted); margin:0 0 22px; line-height:1.6; }
+  .done-note{
+    font-family:'Lato', sans-serif; font-weight:700; font-size:16px; line-height:1.55;
+    color:var(--ink); background:var(--surface-2); border:var(--card-border-w) solid var(--accent-fill-large);
+    border-radius:var(--radius-sm); padding:16px 20px; margin:0 0 26px;
   }
-  .done h2{
-    font-family:'Cormorant Garamond', serif;
-    font-size:1.5rem;
-    margin-bottom:10px;
-  }
-  .done p{ color:var(--muted); margin-bottom:26px; }
-
-  .hidden{ display:none !important; }
+  .done-actions{ display:flex; flex-direction:column; gap:10px; align-items:center; }
 
   @media (max-width:480px){
-    .face{ padding:22px 18px; }
-    .face::before{ left:38px; }
-    .cat-chip{ margin-left:50px !important; }
-    .face-body .term{ font-size:1.4rem; }
-    .face-body .def{ font-size:0.95rem; }
+    .hero-wf{ padding:26px 22px 22px; }
+    .section{ padding:22px 20px; }
+    .face{ padding:18px 16px; }
+    .face-body .term{ font-size:21px; }
+    .face-body .def{ font-size:14.5px; }
   }
-
   @media (prefers-reduced-motion: reduce){
-    .card, .tab{ transition:none !important; }
+    .card-flip, .student-btn, .tab, .bar-fill{ transition:none !important; }
   }
 </style>
 </head>
 <body>
 <div class="app">
+  <main class="canvas">
 
-  <header class="masthead">
-    <h1>Musculoskeletal System Flashcards</h1>
-    <span class="tag">Set Builder</span>
-  </header>
+    <div class="hero-wf">
+      <div class="hero-blob b1"></div>
+      <div class="hero-blob b2"></div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Build-Your-Own</span>
+        <h1 id="page-heading" tabindex="-1">Musculoskeletal System Flashcards</h1>
+        <p class="hero-sub">Add your own terms, sort them by category, and study at your own pace.</p>
 
-  <!-- SETUP SCREEN -->
-  <section id="setup-screen">
-    <p class="setup-intro">Check the categories you want in today's set. You can mix and match — pick just Roots for a quick drill, or check everything for a full review.</p>
-
-    <div class="tabs" id="tabs"></div>
-
-    <div class="direction-block">
-      <div class="direction-label">Show me</div>
-      <div class="direction-toggle" id="direction-toggle">
-        <button class="dir-btn active" data-dir="term-first" type="button">Term first <span class="dir-sub">— recall the definition</span></button>
-        <button class="dir-btn" data-dir="def-first" type="button">Definition first <span class="dir-sub">— recall the term</span></button>
-      </div>
-    </div>
-
-    <div class="setup-controls">
-      <button class="link-btn" id="select-all">Select all</button>
-      <button class="start-btn" id="start-btn" disabled>Start review →</button>
-    </div>
-    <div class="setup-error" id="setup-error"></div>
-  </section>
-
-  <!-- STUDY SCREEN -->
-  <section id="study-screen" class="hidden">
-    <div class="study-header">
-      <span id="study-count">Card 1 of 12</span>
-      <span id="study-cats"></span>
-    </div>
-    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-
-    <div class="stage">
-      <div class="card" id="card">
-        <div class="face front">
-          <div class="punch"></div>
-          <span class="cat-chip" id="chip-front"></span>
-          <div class="face-body"><span class="term" id="front-text"></span></div>
-          <div class="flip-hint">tap card to flip</div>
-        </div>
-        <div class="face back">
-          <div class="punch"></div>
-          <span class="cat-chip" id="chip-back"></span>
-          <div class="face-body"><span class="def" id="back-text"></span></div>
-          <div class="flip-hint">tap card to flip back</div>
+        <div class="topbar hidden" id="topbar">
+          <span class="topbar-name" id="topbar-name"></span>
+          <span class="topbar-actions">
+            <button class="btn-ghost" id="topbar-cards" type="button">My Cards</button>
+            <button class="btn-ghost" id="topbar-export" type="button">Export deck</button>
+            <button class="btn-ghost" id="topbar-switch" type="button">Switch student</button>
+          </span>
         </div>
       </div>
     </div>
 
-    <div class="rate-row" id="rate-row">
-      <button class="rate-btn again" id="btn-again">Review again</button>
-      <button class="rate-btn got-it" id="btn-got-it">Got it ✓</button>
-    </div>
+    <!-- STUDENT SCREEN -->
+    <section id="student-screen" class="section">
+      <p class="section-intro" id="student-intro" tabindex="-1">Who's studying?</p>
+      <div class="student-list" id="student-list"></div>
+      <div class="student-divider" id="student-new-label">Start a new deck</div>
+      <div class="student-new">
+        <div class="field-wrap">
+          <label class="field-label sr-only" for="student-name-input">Your name</label>
+          <input type="text" id="student-name-input" class="text-input" placeholder="Type your name">
+        </div>
+        <button class="btn btn-primary" id="student-start-btn" type="button">Start →</button>
+      </div>
+      <button class="link-btn" id="student-import-btn" type="button">Import a saved deck file</button>
+      <input type="file" id="import-file-input" class="hidden" accept="application/json" aria-label="Import a saved deck file (JSON)">
+      <div class="field-error" id="student-error" role="alert"></div>
+    </section>
 
-    <div class="nav-row">
-      <button class="ghost-btn" id="btn-restart">↺ change categories</button>
-      <button class="ghost-btn" id="btn-shuffle">⤨ reshuffle deck</button>
-    </div>
-  </section>
+    <!-- CARDS SCREEN -->
+    <section id="cards-screen" class="section hidden">
+      <p class="section-intro">Add your own terms and sort each one into a category. Head to Study whenever you're ready — you don't need every category filled in.</p>
 
-  <!-- DONE SCREEN -->
-  <section id="done-screen" class="hidden">
-    <div class="done">
-      <h2 id="done-heading">Set complete</h2>
-      <p id="done-sub">Every card in this set was marked "Got it."</p>
-      <button class="start-btn" id="btn-again-round">Run this set again</button>
-      <br><br>
-      <button class="link-btn" id="btn-new-set">Choose different categories</button>
-    </div>
-  </section>
+      <div class="card-form">
+        <div class="card-form-row">
+          <div class="field-wrap">
+            <label class="field-label" for="card-term-input">Term</label>
+            <input type="text" id="card-term-input" class="text-input" placeholder="e.g. Kyphosis">
+          </div>
+          <div class="field-wrap">
+            <label class="field-label" for="card-cat-select">Category</label>
+            <select id="card-cat-select" class="text-input"></select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label" for="card-def-input">Definition</label>
+          <textarea id="card-def-input" class="text-input" rows="2" placeholder="What does this term mean?"></textarea>
+        </div>
+        <div class="card-form-actions">
+          <button class="btn btn-primary" id="card-save-btn" type="button">Add card</button>
+          <button class="link-btn hidden" id="card-cancel-edit" type="button">Cancel edit</button>
+        </div>
+      </div>
 
+      <div class="bulk-import">
+        <h2>Bulk import from a spreadsheet</h2>
+        <p class="bulk-hint" id="bulk-hint-text">Accepts .csv or .xlsx with three columns: <strong>Group, Word, Definition</strong>. Group should be one of: Roots, Subjective, Objective, Assessment, Plan, General.</p>
+        <button class="btn btn-ghost-ink btn-sm" id="bulk-import-btn" type="button" aria-describedby="bulk-hint-text">Choose file…</button>
+        <input type="file" id="bulk-file-input" class="hidden" accept=".csv,.xlsx,.xls" aria-label="Bulk import spreadsheet (CSV or XLSX)">
+        <div class="field-error" id="bulk-import-status" role="status" aria-live="polite"></div>
+      </div>
+
+      <div class="card-groups" id="card-groups"></div>
+
+      <div class="setup-controls">
+        <span></span>
+        <button class="btn btn-primary" id="cards-to-setup-btn" type="button">I'm done adding — go study →</button>
+      </div>
+    </section>
+
+    <!-- SETUP SCREEN -->
+    <section id="setup-screen" class="section hidden">
+      <p class="section-intro" id="setup-intro" tabindex="-1">Check the categories you want in today's set.</p>
+
+      <div class="tabs" id="tabs" role="group" aria-label="Categories to include"></div>
+
+      <div class="choice-block">
+        <div class="choice-label" id="filter-label">Include</div>
+        <div class="choice-toggle" id="filter-toggle" role="group" aria-labelledby="filter-label">
+          <button class="dir-btn" data-filter="all" type="button" aria-pressed="true">All my cards</button>
+          <button class="dir-btn" data-filter="learning" type="button" aria-pressed="false">Just what I'm still learning</button>
+        </div>
+      </div>
+
+      <div class="choice-block">
+        <div class="choice-label" id="direction-label">Show me</div>
+        <div class="choice-toggle" id="direction-toggle" role="group" aria-labelledby="direction-label">
+          <button class="dir-btn" data-dir="term-first" type="button" aria-pressed="true">Term first <span class="dir-sub">— recall the definition</span></button>
+          <button class="dir-btn" data-dir="def-first" type="button" aria-pressed="false">Definition first <span class="dir-sub">— recall the term</span></button>
+        </div>
+      </div>
+
+      <div class="setup-controls">
+        <button class="link-btn" id="select-all" type="button">Select all</button>
+        <button class="btn btn-primary" id="start-btn" type="button" disabled>Start review →</button>
+      </div>
+      <div class="field-error" id="setup-error" role="alert"></div>
+    </section>
+
+    <!-- STUDY SCREEN -->
+    <section id="study-screen" class="section hidden">
+      <div class="study-header">
+        <span id="study-count" aria-live="polite">Card 1 of 12</span>
+        <span id="study-cats"></span>
+      </div>
+      <div class="bar-track" aria-hidden="true"><div class="bar-fill" id="progress-fill"></div></div>
+
+      <div class="stage">
+        <button type="button" class="card-flip" id="card" aria-pressed="false" aria-label="Flashcard. Press to flip.">
+          <span class="face front" aria-hidden="true">
+            <span class="cat-chip" id="chip-front"></span>
+            <span class="face-body"><span class="term" id="front-text"></span></span>
+            <span class="flip-hint">tap card to flip</span>
+          </span>
+          <span class="face back" aria-hidden="true">
+            <span class="cat-chip" id="chip-back"></span>
+            <span class="face-body"><span class="def" id="back-text"></span></span>
+            <span class="flip-hint">tap card to flip back</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="rate-row">
+        <button class="rate-btn again" id="btn-again" type="button">Don't know it yet</button>
+        <button class="rate-btn got-it" id="btn-got-it" type="button">Got it <span aria-hidden="true">✓</span></button>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn btn-ghost-ink btn-sm" id="btn-restart" type="button"><span aria-hidden="true">↺</span> change categories</button>
+        <button class="btn btn-ghost-ink btn-sm" id="btn-shuffle" type="button"><span aria-hidden="true">⤨</span> reshuffle deck</button>
+      </div>
+    </section>
+
+    <!-- DONE SCREEN -->
+    <section id="done-screen" class="section hidden">
+      <div class="done">
+        <h2 id="done-heading" tabindex="-1">Set complete</h2>
+        <p id="done-sub"></p>
+        <p class="done-note">Nice work — every pass through a set makes the next one a little easier.</p>
+        <div class="done-actions">
+          <button class="btn btn-primary" id="btn-again-round" type="button">Run this set again</button>
+          <button class="link-btn" id="btn-new-set" type="button">Choose different categories</button>
+          <button class="link-btn" id="btn-add-more" type="button">Add more cards</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
 </div>
 
 <script>
-/* ===================== WORD BANK =====================
-   Sample medical terminology, organized to mirror SOAP-note
-   structure plus word roots. Swap these arrays out with your
-   real vocabulary — same {term, definition} shape. */
-const WORD_BANK = {
-  roots: {
-    label: "Roots",
-    color: "var(--teal)",
-    terms: [
-      { term: "cardi/o", definition: "Combining form meaning heart." },
-      { term: "-itis", definition: "Suffix meaning inflammation." },
-      { term: "hepat/o", definition: "Combining form meaning liver." },
-      { term: "-ectomy", definition: "Suffix meaning surgical removal." },
-      { term: "arthr/o", definition: "Combining form meaning joint." },
-      { term: "dys-", definition: "Prefix meaning painful, difficult, or abnormal." },
-      { term: "-emia", definition: "Suffix meaning a condition of the blood." },
-      { term: "brady-", definition: "Prefix meaning slow." },
-    ]
-  },
-  subjective: {
-    label: "Subjective",
-    color: "var(--rose)",
-    terms: [
-      { term: "Chief complaint (CC)", definition: "The primary reason the patient states for seeking care, in their own words." },
-      { term: "History of present illness (HPI)", definition: "A chronological narrative of the patient's current symptoms from onset to now." },
-      { term: "Onset", definition: "When a symptom or condition first began." },
-      { term: "Exacerbation", definition: "A worsening of symptoms or a disease reported by the patient." },
-      { term: "Malaise", definition: "A general feeling of discomfort or unease reported by the patient." },
-    ]
-  },
-  objective: {
-    label: "Objective",
-    color: "var(--sky)",
-    terms: [
-      { term: "Vital signs", definition: "Measured data including temperature, pulse, respiration, and blood pressure." },
-      { term: "Auscultation", definition: "Examination technique of listening to internal sounds, usually with a stethoscope." },
-      { term: "Palpation", definition: "Examination technique of feeling with the hands to assess body structures." },
-      { term: "Afebrile", definition: "Without fever, based on a measured temperature." },
-      { term: "Erythema", definition: "Observable redness of the skin." },
-    ]
-  },
-  assessment: {
-    label: "Assessment",
-    color: "var(--gold)",
-    terms: [
-      { term: "Differential diagnosis", definition: "A ranked list of possible conditions that could explain the patient's findings." },
-      { term: "Rule out (R/O)", definition: "A condition being considered and tested for, to confirm or exclude it." },
-      { term: "Prognosis", definition: "The clinician's prediction of the likely course or outcome of a condition." },
-      { term: "Comorbidity", definition: "A condition existing alongside and independent of the primary diagnosis." },
-    ]
-  },
-  plan: {
-    label: "Plan",
-    color: "var(--sage)",
-    terms: [
-      { term: "Referral", definition: "Directing a patient to another provider or specialist for further care." },
-      { term: "Follow-up (F/U)", definition: "A scheduled future visit to reassess the patient's condition." },
-      { term: "Prophylaxis", definition: "Treatment given to prevent disease before it occurs." },
-      { term: "Titrate", definition: "To gradually adjust a medication dose based on patient response." },
-    ]
-  }
+/* ===================== CONFIG =====================
+   Change SYSTEM_ID for every body-system copy of this file.
+   Storage is namespaced by this value, so decks for different
+   systems hosted on the same domain never collide. */
+const SYSTEM_ID = 'musculoskeletal';
+
+const CATEGORIES = {
+  roots:      { label: "Roots",       chipBg: "var(--cat-roots-bg)",      chipText: "var(--cat-roots-text)"      },
+  subjective: { label: "Subjective",  chipBg: "var(--cat-subjective-bg)", chipText: "var(--cat-subjective-text)" },
+  objective:  { label: "Objective",   chipBg: "var(--cat-objective-bg)",  chipText: "var(--cat-objective-text)"  },
+  assessment: { label: "Assessment",  chipBg: "var(--cat-assessment-bg)", chipText: "var(--cat-assessment-text)" },
+  plan:       { label: "Plan",        chipBg: "var(--cat-plan-bg)",       chipText: "var(--cat-plan-text)"       },
+  general:    { label: "General",     chipBg: "var(--cat-general-bg)",    chipText: "var(--cat-general-text)"    },
 };
 
+/* ===================== STORAGE ===================== */
+const LS_STUDENTS_KEY = `mtf_${SYSTEM_ID}_students`;
+
+function slug(name){
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'student';
+}
+function deckKey(name){ return `mtf_${SYSTEM_ID}_deck_${slug(name)}`; }
+function makeId(){ return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function getStudentList(){
+  try{ return JSON.parse(localStorage.getItem(LS_STUDENTS_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveStudentList(list){ localStorage.setItem(LS_STUDENTS_KEY, JSON.stringify(list)); }
+
+function loadDeck(name){
+  try{ return JSON.parse(localStorage.getItem(deckKey(name))); }
+  catch(e){ return null; }
+}
+function saveDeck(deckObj){
+  deckObj.updatedAt = Date.now();
+  try{
+    localStorage.setItem(deckKey(deckObj.studentName), JSON.stringify(deckObj));
+  }catch(e){ /* storage unavailable or full — fail quietly, export still works */ }
+  const list = getStudentList();
+  if(!list.includes(deckObj.studentName)){
+    list.push(deckObj.studentName);
+    saveStudentList(list);
+  }
+}
+function removeStudentLocal(name){
+  try{ localStorage.removeItem(deckKey(name)); }catch(e){}
+  saveStudentList(getStudentList().filter(n => n !== name));
+}
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+function statusLabel(s){ return s === 'known' ? 'Known' : s === 'learning' ? 'Learning' : 'New'; }
+function statusColorVar(s){ return s === 'known' ? 'var(--status-known)' : s === 'learning' ? 'var(--status-learning)' : 'var(--status-new)'; }
+
 /* ===================== STATE ===================== */
+let currentDeck = null;        // { studentName, cards: [{id,term,definition,category,status}] }
+let editingCardId = null;
 let selectedCats = new Set();
 let studyDirection = 'term-first';
-let deck = [];
+let studyFilter = 'all';       // 'all' | 'learning'
+let deck = [];                 // session queue (references into currentDeck.cards)
 let missedQueue = [];
 let currentIndex = 0;
 let flipped = false;
 let sessionTotal = 0;
 
-/* ===================== SETUP SCREEN ===================== */
-const tabsEl = document.getElementById('tabs');
+/* ===================== SCREEN NAV ===================== */
+const SCREENS = ['student-screen','cards-screen','setup-screen','study-screen','done-screen'];
+// Element to move keyboard/screen-reader focus to whenever a screen becomes visible,
+// so assistive tech users land on the new content instead of staying on a now-hidden control.
+const SCREEN_FOCUS_TARGET = {
+  'student-screen':'student-intro',
+  'cards-screen':'page-heading',
+  'setup-screen':'setup-intro',
+  'study-screen':'study-count',
+  'done-screen':'done-heading',
+};
+function showScreen(id){
+  SCREENS.forEach(s => document.getElementById(s).classList.toggle('hidden', s !== id));
+  document.getElementById('topbar').classList.toggle('hidden', id === 'student-screen');
+  const focusId = SCREEN_FOCUS_TARGET[id];
+  if(focusId){
+    const el = document.getElementById(focusId);
+    if(el) el.focus({ preventScroll:false });
+  }
+}
 
-Object.entries(WORD_BANK).forEach(([key, cat]) => {
-  const tab = document.createElement('div');
-  tab.className = 'tab';
-  tab.dataset.cat = key;
-  tab.innerHTML = `
-    <div class="box"></div>
-    <div class="label-block">
-      <div class="cat-name">${cat.label}</div>
-      <div class="cat-count">${cat.terms.length} terms</div>
-    </div>
-  `;
-  tab.addEventListener('click', () => toggleCategory(key, tab));
-  tabsEl.appendChild(tab);
+/* ===================== STUDENT SCREEN ===================== */
+function renderStudentScreen(){
+  const list = getStudentList();
+  const listEl = document.getElementById('student-list');
+  listEl.innerHTML = '';
+  list.forEach(name => {
+    const row = document.createElement('div');
+    row.className = 'student-row';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'student-btn';
+    btn.textContent = name;
+    btn.addEventListener('click', () => selectStudent(name));
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'student-del';
+    del.textContent = '×';
+    del.setAttribute('aria-label', `Remove ${name}'s deck from this device`);
+    del.title = "Remove this deck from this device";
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if(confirm(`Remove ${name}'s deck from this device? This can't be undone unless there's an exported backup.`)){
+        removeStudentLocal(name);
+        renderStudentScreen();
+      }
+    });
+    row.appendChild(btn);
+    row.appendChild(del);
+    listEl.appendChild(row);
+  });
+  document.getElementById('student-intro').textContent = list.length
+    ? "Who's studying? Pick your name below, or start a new deck."
+    : "Who's studying? Type your name below to start your own deck.";
+  document.getElementById('student-new-label').classList.toggle('hidden', list.length === 0);
+}
+
+function selectStudent(name){
+  const d = loadDeck(name);
+  currentDeck = d || { studentName: name, cards: [] };
+  enterDeck();
+}
+
+document.getElementById('student-start-btn').addEventListener('click', () => {
+  const input = document.getElementById('student-name-input');
+  const name = input.value.trim();
+  const errEl = document.getElementById('student-error');
+  if(!name){ errEl.textContent = 'Type your name first.'; return; }
+  errEl.textContent = '';
+  input.value = '';
+  const existing = loadDeck(name);
+  if(existing){ currentDeck = existing; } else { currentDeck = { studentName: name, cards: [] }; saveDeck(currentDeck); }
+  enterDeck();
+});
+document.getElementById('student-name-input').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('student-start-btn').click();
 });
 
-function toggleCategory(key, tabEl){
-  if(selectedCats.has(key)){
-    selectedCats.delete(key);
-    tabEl.classList.remove('checked');
+document.getElementById('student-import-btn').addEventListener('click', () => {
+  document.getElementById('import-file-input').click();
+});
+document.getElementById('import-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || typeof data.studentName !== 'string' || !Array.isArray(data.cards)) throw new Error('bad shape');
+      data.cards.forEach(c => {
+        if(!c.id) c.id = makeId();
+        if(!c.status) c.status = 'new';
+        if(!CATEGORIES[c.category]) c.category = 'general';
+      });
+      currentDeck = data;
+      saveDeck(currentDeck);
+      document.getElementById('student-error').textContent = '';
+      enterDeck();
+    }catch(err){
+      document.getElementById('student-error').textContent = "Couldn't read that file — make sure it's a deck exported from this tool.";
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+function enterDeck(){
+  document.getElementById('topbar-name').textContent = `Studying as ${currentDeck.studentName}`;
+  if(currentDeck.cards.length === 0){
+    renderCardsScreen();
+    showScreen('cards-screen');
   } else {
-    selectedCats.add(key);
-    tabEl.classList.add('checked');
+    renderSetupScreen();
+    showScreen('setup-screen');
   }
+}
+
+/* ===================== TOPBAR ===================== */
+document.getElementById('topbar-cards').addEventListener('click', () => {
+  renderCardsScreen();
+  showScreen('cards-screen');
+});
+document.getElementById('topbar-switch').addEventListener('click', () => {
+  currentDeck = null;
+  renderStudentScreen();
+  showScreen('student-screen');
+});
+document.getElementById('topbar-export').addEventListener('click', () => {
+  if(!currentDeck) return;
+  const blob = new Blob([JSON.stringify(currentDeck, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${slug(currentDeck.studentName)}-${SYSTEM_ID}-flashcards.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+/* ===================== CARDS SCREEN ===================== */
+function populateCategorySelect(){
+  const sel = document.getElementById('card-cat-select');
+  sel.innerHTML = '';
+  Object.entries(CATEGORIES).forEach(([key, cat]) => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = cat.label;
+    sel.appendChild(opt);
+  });
+}
+
+function renderCardsScreen(){
+  const groupsEl = document.getElementById('card-groups');
+  groupsEl.innerHTML = '';
+  Object.entries(CATEGORIES).forEach(([key, cat]) => {
+    const cards = currentDeck.cards.filter(c => c.category === key);
+    const group = document.createElement('div');
+    group.className = 'card-group' + (cards.length === 0 ? ' is-empty' : '');
+    group.style.setProperty('--accent-color', cat.chipText);
+    const header = document.createElement('div');
+    header.className = 'card-group-header';
+    header.innerHTML = `<span class="cat-chip" style="--chip-bg:${cat.chipBg}; --chip-text:${cat.chipText};">${cat.label}</span> <span class="card-group-count">${cards.length} card${cards.length === 1 ? '' : 's'}</span>`;
+    group.appendChild(header);
+
+    if(cards.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'card-group-empty';
+      empty.textContent = 'No cards yet.';
+      group.appendChild(empty);
+    } else {
+      cards.forEach(c => {
+        const row = document.createElement('div');
+        row.className = 'card-row';
+        row.innerHTML = `
+          <div class="card-row-main">
+            <div class="card-row-term">${escapeHtml(c.term)}</div>
+            <span class="status-badge" style="--status-color:${statusColorVar(c.status)};">${statusLabel(c.status)}</span>
+          </div>
+          <div class="card-row-actions">
+            <button class="btn btn-ghost-ink btn-sm" type="button" data-action="edit" data-id="${c.id}">Edit<span class="sr-only"> ${escapeHtml(c.term)}</span></button>
+            <button class="btn btn-outline-danger btn-sm" type="button" data-action="delete" data-id="${c.id}">Delete<span class="sr-only"> ${escapeHtml(c.term)}</span></button>
+          </div>`;
+        group.appendChild(row);
+      });
+    }
+    groupsEl.appendChild(group);
+  });
+
+  groupsEl.querySelectorAll('[data-action="edit"]').forEach(btn => {
+    btn.addEventListener('click', () => startEditCard(btn.dataset.id));
+  });
+  groupsEl.querySelectorAll('[data-action="delete"]').forEach(btn => {
+    btn.addEventListener('click', () => deleteCard(btn.dataset.id));
+  });
+}
+
+document.getElementById('card-save-btn').addEventListener('click', () => {
+  const term = document.getElementById('card-term-input').value.trim();
+  const def = document.getElementById('card-def-input').value.trim();
+  const cat = document.getElementById('card-cat-select').value;
+  if(!term || !def) return;
+
+  if(editingCardId){
+    const c = currentDeck.cards.find(c => c.id === editingCardId);
+    if(c){ c.term = term; c.definition = def; c.category = cat; }
+    editingCardId = null;
+    document.getElementById('card-save-btn').textContent = 'Add card';
+    document.getElementById('card-cancel-edit').classList.add('hidden');
+  } else {
+    currentDeck.cards.push({ id: makeId(), term, definition: def, category: cat, status: 'new' });
+  }
+  document.getElementById('card-term-input').value = '';
+  document.getElementById('card-def-input').value = '';
+  saveDeck(currentDeck);
+  renderCardsScreen();
+});
+
+document.getElementById('card-cancel-edit').addEventListener('click', () => {
+  editingCardId = null;
+  document.getElementById('card-term-input').value = '';
+  document.getElementById('card-def-input').value = '';
+  document.getElementById('card-save-btn').textContent = 'Add card';
+  document.getElementById('card-cancel-edit').classList.add('hidden');
+});
+
+function startEditCard(id){
+  const c = currentDeck.cards.find(c => c.id === id);
+  if(!c) return;
+  editingCardId = id;
+  document.getElementById('card-term-input').value = c.term;
+  document.getElementById('card-def-input').value = c.definition;
+  document.getElementById('card-cat-select').value = c.category;
+  document.getElementById('card-save-btn').textContent = 'Save changes';
+  document.getElementById('card-cancel-edit').classList.remove('hidden');
+  document.getElementById('card-term-input').focus();
+}
+function deleteCard(id){
+  if(!confirm('Delete this card?')) return;
+  currentDeck.cards = currentDeck.cards.filter(c => c.id !== id);
+  saveDeck(currentDeck);
+  renderCardsScreen();
+}
+
+document.getElementById('cards-to-setup-btn').addEventListener('click', () => {
+  renderSetupScreen();
+  showScreen('setup-screen');
+});
+
+/* ---------- Bulk import from spreadsheet ---------- */
+const GROUP_ALIASES = {
+  'root': 'roots', 'roots': 'roots', 'word root': 'roots', 'word roots': 'roots', 'r': 'roots',
+  'subjective': 'subjective', 'subj': 'subjective', 's': 'subjective',
+  'objective': 'objective', 'obj': 'objective', 'o': 'objective',
+  'assessment': 'assessment', 'assess': 'assessment', 'a': 'assessment',
+  'plan': 'plan', 'p': 'plan',
+  'general': 'general', 'gen': 'general', 'misc': 'general', 'miscellaneous': 'general', 'other': 'general', 'g': 'general',
+};
+function normalizeCategory(raw){
+  const key = String(raw == null ? '' : raw).trim().toLowerCase();
+  return GROUP_ALIASES[key] || null; // null = unrecognized
+}
+
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if(inQuotes){
+      if(ch === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else { inQuotes = false; }
+      } else field += ch;
+    } else {
+      if(ch === '"'){ inQuotes = true; }
+      else if(ch === ','){ row.push(field); field = ''; }
+      else if(ch === '\n' || ch === '\r'){
+        if(ch === '\r' && text[i+1] === '\n') i++;
+        row.push(field); field = '';
+        if(row.length > 1 || row[0] !== '') rows.push(row);
+        row = [];
+      } else field += ch;
+    }
+  }
+  if(field !== '' || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+function importRows(rows){
+  if(!rows || rows.length === 0) throw new Error('empty');
+  const header = rows[0].map(h => String(h == null ? '' : h).trim().toLowerCase());
+  const idxOf = (names) => { for(const n of names){ const i = header.indexOf(n); if(i !== -1) return i; } return -1; };
+  let gi = idxOf(['group','category']);
+  let wi = idxOf(['word','term']);
+  let di = idxOf(['definition','def','meaning']);
+
+  let dataRows;
+  if(gi === -1 && wi === -1 && di === -1){
+    // No recognizable header row — assume columns are Group, Word, Definition
+    // in order and that every row (including the first) is data.
+    gi = 0; wi = 1; di = 2;
+    dataRows = rows;
+  } else {
+    if(gi === -1) gi = 0;
+    if(wi === -1) wi = 1;
+    if(di === -1) di = 2;
+    dataRows = rows.slice(1);
+  }
+
+  let added = 0, skippedDup = 0, skippedEmpty = 0, unrecognizedGroup = 0;
+  dataRows.forEach(r => {
+    const term = String(r[wi] == null ? '' : r[wi]).trim();
+    const definition = String(r[di] == null ? '' : r[di]).trim();
+    if(!term || !definition){ skippedEmpty++; return; }
+    let category = normalizeCategory(r[gi]);
+    if(!category){ category = 'general'; unrecognizedGroup++; }
+    const dup = currentDeck.cards.some(c =>
+      c.category === category && c.term.trim().toLowerCase() === term.toLowerCase());
+    if(dup){ skippedDup++; return; }
+    currentDeck.cards.push({ id: makeId(), term, definition, category, status: 'new' });
+    added++;
+  });
+
+  let summary = `Added ${added} card${added === 1 ? '' : 's'}.`;
+  const notes = [];
+  if(skippedDup) notes.push(`${skippedDup} skipped as duplicate${skippedDup === 1 ? '' : 's'}`);
+  if(skippedEmpty) notes.push(`${skippedEmpty} row${skippedEmpty === 1 ? '' : 's'} skipped (missing word or definition)`);
+  if(unrecognizedGroup) notes.push(`${unrecognizedGroup} row${unrecognizedGroup === 1 ? '' : 's'} filed under General (group not recognized)`);
+  if(notes.length) summary += ' ' + notes.join('; ') + '.';
+  return summary;
+}
+
+document.getElementById('bulk-import-btn').addEventListener('click', () => {
+  document.getElementById('bulk-file-input').click();
+});
+document.getElementById('bulk-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const statusEl = document.getElementById('bulk-import-status');
+  statusEl.style.color = '';
+  statusEl.textContent = 'Reading file…';
+  const isExcel = /\.xlsx?$/i.test(file.name);
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    try{
+      let rows;
+      if(isExcel){
+        if(typeof XLSX === 'undefined') throw new Error('xlsx-lib-missing');
+        const wb = XLSX.read(reader.result, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      } else {
+        rows = parseCSV(String(reader.result));
+      }
+      const summary = importRows(rows);
+      saveDeck(currentDeck);
+      renderCardsScreen();
+      statusEl.style.color = '';
+      statusEl.textContent = summary;
+    }catch(err){
+      statusEl.style.color = 'var(--accent-fill)';
+      statusEl.textContent = (err && err.message === 'xlsx-lib-missing')
+        ? "Couldn't load the spreadsheet reader (needs an internet connection). Try again, or save the file as CSV instead."
+        : "Couldn't read that file. Make sure it has three columns: Group, Word, Definition.";
+    }
+  };
+  reader.onerror = () => {
+    statusEl.style.color = 'var(--accent-fill)';
+    statusEl.textContent = "Couldn't read that file. Please try again.";
+  };
+
+  if(isExcel) reader.readAsArrayBuffer(file); else reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ===================== SETUP SCREEN ===================== */
+function renderSetupScreen(){
+  selectedCats = new Set();
+  const tabsEl = document.getElementById('tabs');
+  tabsEl.innerHTML = '';
+
+  Object.entries(CATEGORIES).forEach(([key, cat]) => {
+    const count = currentDeck.cards.filter(c => c.category === key).length;
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'tab';
+    tab.setAttribute('role', 'checkbox');
+    tab.setAttribute('aria-checked', 'false');
+    if(count === 0) tab.setAttribute('aria-disabled', 'true');
+    tab.dataset.cat = key;
+    tab.style.setProperty('--accent-color', cat.chipText);
+    tab.innerHTML = `
+      <span class="box" aria-hidden="true"></span>
+      <span class="label-block">
+        <span class="cat-name">${cat.label}</span>
+        <span class="cat-count">${count} card${count === 1 ? '' : 's'}${count === 0 ? ' — add some!' : ''}</span>
+      </span>`;
+    if(count > 0){
+      tab.addEventListener('click', () => toggleCategory(key, tab));
+    }
+    tabsEl.appendChild(tab);
+  });
+
+  document.getElementById('select-all').textContent = 'Select all';
+  document.querySelectorAll('#filter-toggle .dir-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.filter === studyFilter)));
+  document.querySelectorAll('#direction-toggle .dir-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir === studyDirection)));
+  document.getElementById('setup-error').textContent = '';
   updateStartButton();
 }
 
+function toggleCategory(key, tabEl){
+  if(selectedCats.has(key)){ selectedCats.delete(key); tabEl.setAttribute('aria-checked', 'false'); }
+  else { selectedCats.add(key); tabEl.setAttribute('aria-checked', 'true'); }
+  updateStartButton();
+}
 function updateStartButton(){
-  const btn = document.getElementById('start-btn');
-  btn.disabled = selectedCats.size === 0;
-  document.getElementById('setup-error').textContent =
-    selectedCats.size === 0 ? '' : '';
+  document.getElementById('start-btn').disabled = selectedCats.size === 0;
 }
 
 document.getElementById('select-all').addEventListener('click', () => {
-  const allSelected = selectedCats.size === Object.keys(WORD_BANK).length;
-  document.querySelectorAll('.tab').forEach(tab => {
+  const availableKeys = Object.keys(CATEGORIES).filter(k => currentDeck.cards.some(c => c.category === k));
+  const allSelected = availableKeys.length > 0 && availableKeys.every(k => selectedCats.has(k));
+  document.querySelectorAll('.tab[aria-disabled]:not([aria-disabled="true"]), .tab:not([aria-disabled])').forEach(tab => {
     const key = tab.dataset.cat;
-    if(allSelected){
-      selectedCats.delete(key);
-      tab.classList.remove('checked');
-    } else {
-      selectedCats.add(key);
-      tab.classList.add('checked');
-    }
+    if(allSelected){ selectedCats.delete(key); tab.setAttribute('aria-checked', 'false'); }
+    else { selectedCats.add(key); tab.setAttribute('aria-checked', 'true'); }
   });
   document.getElementById('select-all').textContent = allSelected ? 'Select all' : 'Clear all';
   updateStartButton();
 });
 
-document.querySelectorAll('.dir-btn').forEach(btn => {
+document.querySelectorAll('#filter-toggle .dir-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    studyFilter = btn.dataset.filter;
+    document.querySelectorAll('#filter-toggle .dir-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    btn.setAttribute('aria-pressed', 'true');
+  });
+});
+document.querySelectorAll('#direction-toggle .dir-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     studyDirection = btn.dataset.dir;
-    document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    document.querySelectorAll('#direction-toggle .dir-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    btn.setAttribute('aria-pressed', 'true');
   });
 });
 
@@ -604,6 +1078,12 @@ document.getElementById('start-btn').addEventListener('click', () => {
     return;
   }
   buildDeck();
+  if(deck.length === 0){
+    document.getElementById('setup-error').textContent =
+      "No cards match that combination yet — try including more categories, or switch to \u201cAll my cards.\u201d";
+    return;
+  }
+  document.getElementById('setup-error').textContent = '';
   startStudySession();
 });
 
@@ -618,12 +1098,13 @@ function shuffle(arr){
 }
 
 function buildDeck(){
-  let pool = [];
-  selectedCats.forEach(key => {
-    WORD_BANK[key].terms.forEach(t => {
-      pool.push({ ...t, catKey: key, catLabel: WORD_BANK[key].label, catColor: WORD_BANK[key].color });
-    });
-  });
+  // These are references into currentDeck.cards (not copies), so grading
+  // a card during study writes its new status straight back into the
+  // student's saved deck.
+  let pool = currentDeck.cards.filter(c => selectedCats.has(c.category));
+  if(studyFilter === 'learning'){
+    pool = pool.filter(c => c.status !== 'known');
+  }
   deck = shuffle(pool);
   missedQueue = [];
   currentIndex = 0;
@@ -631,47 +1112,46 @@ function buildDeck(){
 }
 
 /* ===================== STUDY SCREEN ===================== */
-const setupScreen = document.getElementById('setup-screen');
-const studyScreen = document.getElementById('study-screen');
-const doneScreen = document.getElementById('done-screen');
 const cardEl = document.getElementById('card');
 
 function startStudySession(){
-  setupScreen.classList.add('hidden');
-  doneScreen.classList.add('hidden');
-  studyScreen.classList.remove('hidden');
+  showScreen('study-screen');
   showCard();
 }
+function currentCard(){ return deck[currentIndex]; }
 
-function currentCard(){
-  return deck[currentIndex];
+function updateFlipAccessibleLabel(){
+  const c = currentCard();
+  if(!c) return;
+  const termLabel = studyDirection === 'term-first' ? c.term : c.definition;
+  const defLabel = studyDirection === 'term-first' ? c.definition : c.term;
+  cardEl.setAttribute('aria-label',
+    flipped
+      ? `Flashcard, showing: ${defLabel}. Press to flip back.`
+      : `Flashcard, showing: ${termLabel}. Press to flip and reveal the answer.`);
+  cardEl.setAttribute('aria-pressed', String(flipped));
 }
 
 function showCard(instant){
-  if(currentIndex >= deck.length){
-    finishRound();
-    return;
-  }
+  if(currentIndex >= deck.length){ finishRound(); return; }
   flipped = false;
 
   if(instant){
-    // Advancing to a new card: snap straight to the front, no flip
-    // animation — otherwise the new card's text gets swapped in
-    // mid-rotation and is readable before the flip finishes.
     cardEl.style.transition = 'none';
     cardEl.classList.remove('flipped');
-    void cardEl.offsetWidth; // force reflow before re-enabling transition
+    void cardEl.offsetWidth;
     cardEl.style.transition = '';
   } else {
     cardEl.classList.remove('flipped');
   }
 
   const c = currentCard();
+  const cat = CATEGORIES[c.category];
 
   const frontEl = document.getElementById('front-text');
   const backEl = document.getElementById('back-text');
   if(studyDirection === 'term-first'){
-    frontEl.textContent = c.term;      frontEl.className = 'term';
+    frontEl.textContent = c.term;       frontEl.className = 'term';
     backEl.textContent  = c.definition; backEl.className  = 'def';
   } else {
     frontEl.textContent = c.definition; frontEl.className = 'def';
@@ -680,30 +1160,43 @@ function showCard(instant){
 
   ['chip-front','chip-back'].forEach(id => {
     const chip = document.getElementById(id);
-    chip.textContent = c.catLabel;
-    chip.style.color = c.catColor;
+    chip.textContent = cat.label;
+    chip.style.setProperty('--chip-bg', cat.chipBg);
+    chip.style.setProperty('--chip-text', cat.chipText);
   });
+  document.querySelectorAll('#card .face').forEach(f => f.style.setProperty('--accent-color', cat.chipText));
 
-  const doneCount = sessionTotal - deck.length + currentIndex;
   document.getElementById('study-count').textContent = `Card ${currentIndex + 1} of ${deck.length}`;
   document.getElementById('study-cats').textContent =
-    [...selectedCats].map(k => WORD_BANK[k].label).join(' · ');
+    [...selectedCats].map(k => CATEGORIES[k].label).join(' · ');
 
-  const pct = ((currentIndex) / deck.length) * 100;
+  const pct = (currentIndex / deck.length) * 100;
   document.getElementById('progress-fill').style.width = pct + '%';
+
+  updateFlipAccessibleLabel();
 }
 
 cardEl.addEventListener('click', () => {
   flipped = !flipped;
   cardEl.classList.toggle('flipped', flipped);
+  updateFlipAccessibleLabel();
 });
+
+function gradeCurrentCard(correct){
+  const c = currentCard();
+  if(!c) return;
+  c.status = correct ? (c.status === 'new' ? 'learning' : 'known') : 'new';
+  saveDeck(currentDeck);
+}
 
 document.getElementById('btn-got-it').addEventListener('click', (e) => {
   e.stopPropagation();
+  gradeCurrentCard(true);
   advance();
 });
 document.getElementById('btn-again').addEventListener('click', (e) => {
   e.stopPropagation();
+  gradeCurrentCard(false);
   missedQueue.push(currentCard());
   advance();
 });
@@ -722,29 +1215,39 @@ document.getElementById('btn-shuffle').addEventListener('click', () => {
   deck = deck.slice(0, currentIndex).concat(shuffle(remaining));
   showCard(true);
 });
-
 document.getElementById('btn-restart').addEventListener('click', () => {
-  studyScreen.classList.add('hidden');
-  setupScreen.classList.remove('hidden');
+  renderSetupScreen();
+  showScreen('setup-screen');
 });
 
 /* ===================== DONE SCREEN ===================== */
 function finishRound(){
-  studyScreen.classList.add('hidden');
-  doneScreen.classList.remove('hidden');
+  showScreen('done-screen');
   document.getElementById('done-heading').textContent = 'Set complete';
   document.getElementById('done-sub').textContent =
-    `You reviewed ${sessionTotal} term${sessionTotal === 1 ? '' : 's'} across ${selectedCats.size} categor${selectedCats.size === 1 ? 'y' : 'ies'}.`;
+    `You reviewed ${sessionTotal} card${sessionTotal === 1 ? '' : 's'} across ${selectedCats.size} categor${selectedCats.size === 1 ? 'y' : 'ies'}. Your progress is saved on this device — use Export deck above if you're on a shared computer.`;
 }
-
 document.getElementById('btn-again-round').addEventListener('click', () => {
   buildDeck();
   startStudySession();
 });
 document.getElementById('btn-new-set').addEventListener('click', () => {
-  doneScreen.classList.add('hidden');
-  setupScreen.classList.remove('hidden');
+  renderSetupScreen();
+  showScreen('setup-screen');
 });
+document.getElementById('btn-add-more').addEventListener('click', () => {
+  renderCardsScreen();
+  showScreen('cards-screen');
+});
+
+/* ===================== INIT ===================== */
+populateCategorySelect();
+renderStudentScreen();
+SCREENS.forEach(s => document.getElementById(s).classList.toggle('hidden', s !== 'student-screen'));
+document.getElementById('topbar').classList.add('hidden');
+// (Deliberately not calling showScreen() here, since it would yank keyboard
+// focus to the intro text the instant the page loads, before the user has
+// done anything — better to leave initial focus wherever the browser puts it.)
 </script>
 </body>
 </html>
