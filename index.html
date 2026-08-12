@@ -382,6 +382,32 @@
   }
   .done-actions{ display:flex; flex-direction:column; gap:10px; align-items:center; }
 
+  /* ---------- PRINTABLE FLASHCARDS ---------- */
+  #print-sheet{ display:none; }
+  @page{ size: letter; margin:0.4in; }
+  .print-page{ width:7.7in; page-break-after:always; }
+  .print-page:last-child{ page-break-after:auto; }
+  .print-note{
+    font-family:'Lato', sans-serif; font-size:8.5pt; color:#6a6a6a;
+    border-bottom:1px solid #ccc; padding-bottom:8pt; margin-bottom:10pt; line-height:1.4;
+  }
+  .print-strip{ display:flex; height:2.55in; border-top:1px dashed #999; box-sizing:border-box; }
+  .print-strip:first-child{ border-top:none; }
+  .print-half{ width:50%; padding:0.16in 0.26in; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; overflow:hidden; }
+  .print-term-half{ border-right:1px dotted #999; align-items:center; text-align:center; }
+  .print-term-half .term-text{ font-family:var(--font-display); font-weight:800; font-size:19pt; color:#13133e; }
+  .print-def-half .cat-label{
+    font-family:'Lato', sans-serif; font-weight:800; font-size:7.5pt; text-transform:uppercase; letter-spacing:0.05em;
+    border:1px solid currentColor; border-radius:999px; padding:2px 9px; display:inline-block; margin-bottom:7pt; width:fit-content;
+  }
+  .print-def-half .def-text{ font-family:'Lato', sans-serif; font-size:10.5pt; line-height:1.4; color:#13133e; }
+
+  @media print{
+    body{ display:block; padding:0; background:#fff; }
+    body > .app{ display:none; }
+    #print-sheet{ display:block; }
+  }
+
   @media (max-width:480px){
     .hero-wf{ padding:26px 22px 22px; }
     .section{ padding:22px 20px; }
@@ -410,6 +436,7 @@
           <span class="topbar-name" id="topbar-name"></span>
           <span class="topbar-actions">
             <button class="btn-ghost" id="topbar-cards" type="button">My Cards</button>
+            <button class="btn-ghost" id="topbar-print" type="button" title="Opens your browser's print dialog — choose Save as PDF to download. Print at 100% scale for accurate cut/fold lines.">Print flashcards</button>
             <button class="btn-ghost" id="topbar-export" type="button">Export deck</button>
             <button class="btn-ghost" id="topbar-switch" type="button">Switch student</button>
           </span>
@@ -554,6 +581,7 @@
 
   </main>
 </div>
+<div id="print-sheet" aria-hidden="true"></div>
 
 <script>
 /* ===================== CONFIG =====================
@@ -763,6 +791,71 @@ document.getElementById('topbar-export').addEventListener('click', () => {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+});
+
+/* ---------- PRINTABLE FLASHCARDS ----------
+   4 strips per Letter page: term on the left half, definition + category
+   on the right half. A dotted line down the middle of each strip is the
+   fold (term/definition end up back-to-back); dashed lines between strips
+   are where to cut. Uses the browser's native print dialog so "Save as
+   PDF" doubles as the download — no extra libraries needed. */
+function buildPrintSheet(){
+  const cards = [...currentDeck.cards].sort((a, b) => {
+    const order = Object.keys(CATEGORIES);
+    const ca = order.indexOf(a.category), cb = order.indexOf(b.category);
+    if(ca !== cb) return ca - cb;
+    return a.term.localeCompare(b.term);
+  });
+  const sheet = document.getElementById('print-sheet');
+  sheet.innerHTML = '';
+  if(cards.length === 0) return false;
+
+  // Page 1 carries the instructional note, so it holds 3 cards instead of 4
+  // to guarantee it still fits inside one Letter page — every other page
+  // holds the full 4. All strips stay the same fixed height either way, so
+  // no card ends up a different size on the sheet.
+  let idx = 0, pageNum = 0;
+  while(idx < cards.length){
+    const chunkSize = pageNum === 0 ? 3 : 4;
+    const pageCards = cards.slice(idx, idx + chunkSize);
+    const page = document.createElement('div');
+    page.className = 'print-page';
+
+    if(pageNum === 0){
+      const note = document.createElement('div');
+      note.className = 'print-note';
+      note.textContent =
+        `${currentDeck.studentName}'s flashcards — dashed lines are where to cut, the dotted line down the middle of each strip is where to fold in half. ` +
+        `Print at 100% scale (not "fit to page"), single-sided, with headers/footers turned off for the cleanest cut.`;
+      page.appendChild(note);
+    }
+
+    pageCards.forEach(c => {
+      const cat = CATEGORIES[c.category];
+      const strip = document.createElement('div');
+      strip.className = 'print-strip';
+      strip.innerHTML = `
+        <div class="print-half print-term-half"><span class="term-text">${escapeHtml(c.term)}</span></div>
+        <div class="print-half print-def-half">
+          <span class="cat-label" style="color:${cat.chipText};">${cat.label}</span>
+          <span class="def-text">${escapeHtml(c.definition)}</span>
+        </div>`;
+      page.appendChild(strip);
+    });
+    sheet.appendChild(page);
+    idx += chunkSize;
+    pageNum++;
+  }
+  return true;
+}
+
+document.getElementById('topbar-print').addEventListener('click', () => {
+  if(!currentDeck || currentDeck.cards.length === 0){
+    alert("Add some cards first — there's nothing to print yet.");
+    return;
+  }
+  buildPrintSheet();
+  window.print();
 });
 
 /* ===================== CARDS SCREEN ===================== */
